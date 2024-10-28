@@ -3,7 +3,7 @@
     <div class="row justify-content-center">
       <div class="col-md-6">
         <div class="card p-4">
-          <Form @submit="handleSignup" class="signup-form">
+          <Form @submit="handleSubmit" class="signup-form">
             <div class="mb-3">
               <label for="username" class="form-label">Nom</label>
               <Field 
@@ -67,6 +67,8 @@
             <button type="submit" class="btn btn-primary w-100">Créer un compte</button>
             <p class="text-center mt-3">Déjà un compte ? <a href="/connexion">Se connecter</a></p>
           </Form>
+          <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
+          <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
         </div>
       </div>
     </div>
@@ -77,6 +79,7 @@
 import { defineRule } from 'vee-validate';
 import { required, email, min } from '@vee-validate/rules';
 import { Form, Field, ErrorMessage } from 'vee-validate';
+import axios from 'axios';
 
 defineRule('required', required);
 defineRule('email', email);
@@ -121,21 +124,42 @@ export default {
       confirmPassword: '',
       termsAccepted: false,
       formSubmitted: false,
+      errorMessage: '',
+      successMessage: '',
     };
   },
   methods: {
-    handleSignup(values) {
+    async handleSubmit() {
       this.formSubmitted = true;
-      if (this.termsAccepted) {
-        console.log('Formulaire rempli correctement');
-        console.log('Formulaire soumis avec succès', values);
-        // axios.post('/api/signup', values)
-        //   .then(response => { /* redirection */ })
-        //   .catch(error => { /* afficher message d'erreur */ })
-      } else {
-        console.log('Formulaire contient des erreurs');
+      if (!this.termsAccepted) {
+        this.errorMessage = 'Vous devez accepter les conditions d\'utilisation';
+        return;
+      }
+      this.errorMessage = '';
+      await this.handleSignup();
+    },
+    async handleSignup() {
+      try {
+        await axios.post(`${process.env.VUE_APP_URL_BACKEND}/signup`, {
+          username: this.username,
+          email: this.email,
+          password: this.password
+        }, {
+          withCredentials: true
+        });
+        this.successMessage = 'Inscription réussie ! Redirection vers la page de connexion...';
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 1500);
+      } catch (error) {
+        if (error.response && error.response.data && error.response.data.message) {
+          this.errorMessage = error.response.data.message;
+        } else {
+          this.errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.';
+        }
       }
     },
   },
-};
+}
 </script>
+

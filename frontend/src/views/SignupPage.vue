@@ -5,16 +5,16 @@
         <div class="card p-4">
           <Form @submit="handleSignup" class="signup-form">
             <div class="mb-3">
-              <label for="name" class="form-label">Nom</label>
+              <label for="username" class="form-label">Nom</label>
               <Field 
-                id="name" 
-                name="name" 
+                id="username" 
+                name="username" 
                 type="text" 
                 class="form-control" 
-                v-model="name"
+                v-model="username"
                 rules="required|min:3"
               />
-              <ErrorMessage name="name" class="text-danger"/>
+              <ErrorMessage name="username" class="text-danger"/>
             </div>
             <div class="mb-3">
               <label for="email" class="form-label">Adresse mail</label>
@@ -115,7 +115,7 @@ export default {
   },
   data() {
     return {
-      name: '',
+      username: '',
       email: '',
       password: '',
       confirmPassword: '',

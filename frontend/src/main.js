@@ -3,6 +3,8 @@ import App from './App.vue'
 import router from './router'
 import './assets/styles.scss'
 import './registerServiceWorker'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap';
 
 createApp(App)
   .use(router)

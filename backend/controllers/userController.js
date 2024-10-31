@@ -28,6 +28,7 @@ exports.signupUser = async (req, res, next) => {
     });
     res.status(201).json({ message: 'Utilisateur enregistré avec succès'});
   } catch (error) {
+    console.log('Erreur attrapée dans signupUser:', error.message); // Ajoutez cette ligne pour voir l'erreur
     next(error);
   }
 };

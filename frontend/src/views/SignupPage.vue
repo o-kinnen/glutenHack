@@ -24,7 +24,7 @@
                 type="email" 
                 class="form-control" 
                 v-model="email"
-                rules="required|email|emailFormat"
+                rules="required|email"
               />
               <ErrorMessage name="email" class="text-danger"/>
             </div>
@@ -61,11 +61,10 @@
                 v-model="termsAccepted"
               />
               <label for="terms" class="form-check-label">J'accepte les conditions d'utilisation</label>
-              <a href="/conditions" class="terms-link ms-2">Lire les termes de confidentialité</a>
-              <span v-if="!termsAccepted && formSubmitted" class="text-danger">Vous devez accepter les conditions d'utilisation</span>
+              <router-link to="/conditions" class="terms-link ms-2">Lire les termes de confidentialité</router-link>
             </div>
             <button type="submit" class="btn btn-primary w-100">Créer un compte</button>
-            <p class="text-center mt-3">Déjà un compte ? <a href="/connexion">Se connecter</a></p>
+            <p class="text-center mt-3">Déjà un compte ? <router-link to="/connexion">Se connecter</router-link></p>
           </Form>
           <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
           <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
@@ -77,37 +76,42 @@
 
 <script>
 import { defineRule } from 'vee-validate';
-import { required, email, min } from '@vee-validate/rules';
 import { Form, Field, ErrorMessage } from 'vee-validate';
 import axios from 'axios';
 
-defineRule('required', required);
-defineRule('email', email);
-defineRule('min', min);
 defineRule('required', value => {
   return value ? true : 'Veuillez remplir ce champ correctement.';
 });
-defineRule('matches', (value, [target], ctx) => {
-  return value === ctx.form[target] || 'Les mots de passe ne correspondent pas';
+defineRule('min', (value, [limit]) => {
+  if (value && value.length < limit) {
+    return `Veuillez remplir ce champ avec au moins ${limit} caractères.`;
+  }
+  return true;
 });
-defineRule('emailFormat', (value) => {
+defineRule('email', (value) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return emailRegex.test(value) || 'Le format de l\'adresse mail est invalide';
+  if (!emailRegex.test(value)) {
+    return 'Le format de l\'adresse mail est invalide.';
+  }
+  return true;
+});
+defineRule('matches', (value, [target], ctx) => {
+  return value === ctx.form[target] || 'Les mots de passe ne correspondent pas.';
 });
 defineRule('passwordUppercase', (value) => {
-  return /[A-Z]/.test(value) || 'Le mot de passe doit contenir au moins une lettre majuscule';
+  return /[A-Z]/.test(value) || 'Le mot de passe doit contenir au moins une lettre majuscule.';
 });
 defineRule('passwordLowercase', (value) => {
-  return /[a-z]/.test(value) || 'Le mot de passe doit contenir au moins une lettre minuscule';
+  return /[a-z]/.test(value) || 'Le mot de passe doit contenir au moins une lettre minuscule.';
 });
 defineRule('passwordNumber', (value) => {
-  return /[0-9]/.test(value) || 'Le mot de passe doit contenir au moins un chiffre';
+  return /[0-9]/.test(value) || 'Le mot de passe doit contenir au moins un chiffre.';
 });
 defineRule('passwordSpecial', (value) => {
-  return /[!@#$%^&*(),.?":{}|<>]/.test(value) || 'Le mot de passe doit contenir au moins un caractère spécial';
+  return /[!@#$%^&*(),.?":{}|<>]/.test(value) || 'Le mot de passe doit contenir au moins un caractère spécial.';
 });
 defineRule('noSpaces', (value) => {
-  return !/\s/.test(value) || "Le mot de passe ne doit pas contenir d'espaces";
+  return !/\s/.test(value) || "Le mot de passe ne doit pas contenir d'espaces.";
 });
 
 export default {
@@ -132,7 +136,7 @@ export default {
     async handleSubmit() {
       this.formSubmitted = true;
       if (!this.termsAccepted) {
-        this.errorMessage = 'Vous devez accepter les conditions d\'utilisation';
+        this.errorMessage = 'Vous devez accepter les conditions d\'utilisation.';
         return;
       }
       this.errorMessage = '';
@@ -149,7 +153,7 @@ export default {
         });
         this.successMessage = 'Inscription réussie ! Redirection vers la page de connexion...';
         setTimeout(() => {
-          this.$router.push('/');
+          this.$router.push('/connexion');
         }, 1500);
       } catch (error) {
         if (error.response && error.response.data && error.response.data.message) {

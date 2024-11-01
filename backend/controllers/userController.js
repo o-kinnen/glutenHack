@@ -88,6 +88,10 @@ exports.checkAuth = async (req, res, next) => {
 };
 
 exports.logoutUser = (req, res) => {
+  const token = req.cookies.token; // Assurez-vous de récupérer le token des cookies
+  if (!token) {
+    return res.status(401).json({ message: 'Accès non autorisé.' });
+  }
   res.clearCookie('token');
-  res.status(200).json({ message: 'Déconnexion réussie' });
+  res.status(200).json({ message: 'Déconnexion réussie.' });
 };

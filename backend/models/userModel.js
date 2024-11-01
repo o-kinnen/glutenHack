@@ -20,6 +20,10 @@ const User = {
       'INSERT INTO public."users" (username, email, password) VALUES ($1, $2, $3) RETURNING *',
       [user.username, user.email, user.password]);
     return result.rows[0];
+  },
+  delete: async (id) => {
+    const result = await pool.query('DELETE FROM public."users" WHERE id = $1 RETURNING *', [id]);
+    return result.rows[0];
   }
 };
 

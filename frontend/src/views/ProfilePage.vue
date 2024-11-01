@@ -61,10 +61,24 @@ export default {
             // Logique pour modifier le profil
             console.log('Modification du profil');
         },
-        deleteAccount() {
-            // Logique pour supprimer le compte
-            console.log('Suppression du compte');
-        }
+        async deleteAccount () {
+            if (confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')) {
+                try {
+                    const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/delete`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    })
+                    if (response.ok) {
+                        alert('Votre compte a été supprimé avec succès.')
+                        this.logout()
+                    } else {
+                        this.errorMessage = 'Erreur lors de la suppression du compte.'
+                    }
+                } catch (error) {
+                    this.errorMessage = 'Erreur lors de la suppression du compte.'
+                }
+            }
+        },
     },
     created() {
         this.fetchProfile()

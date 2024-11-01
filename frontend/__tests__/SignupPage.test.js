@@ -192,15 +192,15 @@ describe('SignupPage.vue - Form Validation', () => {
     expect(successMessage.text()).toContain('Inscription réussie ! Redirection vers la page de connexion...');
   });
 
-  it('should navigate to /conditions when the conditions link is clicked', async () => {
-    const link = wrapper.findAllComponents(RouterLinkStub).find(link => link.props().to === '/conditions');
+  it('should navigate to /terms when the conditions link is clicked', async () => {
+    const link = wrapper.findAllComponents(RouterLinkStub).find(link => link.props().to === '/terms');
     expect(link.exists()).toBe(true);
-    expect(link.props().to).toBe('/conditions');
+    expect(link.props().to).toBe('/terms');
   });
 
-  it('should navigate to /connexion when the login link is clicked', async () => {
-    const link = wrapper.findAllComponents(RouterLinkStub).find(link => link.props().to === '/connexion');
+  it('should navigate to /login when the login link is clicked', async () => {
+    const link = wrapper.findAllComponents(RouterLinkStub).find(link => link.props().to === '/login');
     expect(link.exists()).toBe(true);
-    expect(link.props().to).toBe('/connexion');
+    expect(link.props().to).toBe('/login');
   });
 });

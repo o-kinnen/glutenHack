@@ -61,10 +61,10 @@
                 v-model="termsAccepted"
               />
               <label for="terms" class="form-check-label">J'accepte les conditions d'utilisation</label>
-              <router-link to="/conditions" class="terms-link ms-2">Lire les termes de confidentialité</router-link>
+              <router-link to="/terms" class="terms-link ms-2">Lire les termes de confidentialité</router-link>
             </div>
             <button type="submit" class="btn btn-primary w-100">Créer un compte</button>
-            <p class="text-center mt-3">Déjà un compte ? <router-link to="/connexion">Se connecter</router-link></p>
+            <p class="text-center mt-3">Déjà un compte ? <router-link to="/login">Se connecter</router-link></p>
           </Form>
           <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
           <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
@@ -144,7 +144,7 @@ export default {
     },
     async handleSignup() {
       try {
-        await axios.post(`${process.env.VUE_APP_URL_BACKEND}/signup`, {
+        await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/signup`, {
           username: this.username,
           email: this.email,
           password: this.password
@@ -153,7 +153,7 @@ export default {
         });
         this.successMessage = 'Inscription réussie ! Redirection vers la page de connexion...';
         setTimeout(() => {
-          this.$router.push('/connexion');
+          this.$router.push('/login');
         }, 1500);
       } catch (error) {
         if (error.response && error.response.data && error.response.data.message) {

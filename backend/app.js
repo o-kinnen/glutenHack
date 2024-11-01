@@ -14,7 +14,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use('/', userRoutes);
+app.use('/users', userRoutes);
 app.use(errorHandler);
 
 module.exports = app;

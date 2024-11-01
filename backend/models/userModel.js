@@ -10,6 +10,11 @@ const User = {
       [email]);
     return result.rows[0];
   },
+  findById: async (id) => {
+    const result = await pool.query('SELECT * FROM public."users" WHERE id = $1', 
+      [id]);
+    return result.rows[0];
+  },
   create: async (user) => {
     const result = await pool.query(
       'INSERT INTO public."users" (username, email, password) VALUES ($1, $2, $3) RETURNING *',

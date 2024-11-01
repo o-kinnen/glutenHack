@@ -8,9 +8,13 @@ describe('User Signup Integration Test', () => {
     await pool.end();
   });  
 
+  afterEach(async () => {
+    await pool.query('DELETE FROM public."users" WHERE email LIKE $1',['testuser%@example.com']);
+  });
+
   it('should create a new user successfully', async () => {
     const response = await request(app)
-      .post('/signup')
+      .post('/users/signup')
       .send({
         username: 'testuser',
         email: `testuser${Math.random()}@example.com`,
@@ -18,18 +22,18 @@ describe('User Signup Integration Test', () => {
       });
 
     expect(response.status).toBe(201);
-    expect(response.body.message).toBe('Utilisateur enregistré avec succès');
+    expect(response.body.message).toBe('Utilisateur enregistré avec succès.');
   });
 
   it('should not allow creating a user with an existing email', async () => {
-    await request(app).post('/signup').send({
+    await request(app).post('/users/signup').send({
       username: 'testuser',
       email: 'testuser@example.com',
       password: 'TestPassword1!',
     });
 
     const response = await request(app)
-      .post('/signup')
+      .post('/users/signup')
       .send({
         username: 'testuser',
         email: 'testuser@example.com',
@@ -37,6 +41,6 @@ describe('User Signup Integration Test', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('Ce compte existe déjà');
+    expect(response.body.message).toBe('Ce compte existe déjà.');
   }); 
 });

@@ -6,7 +6,9 @@ const routes = [
   { path: '/signup', name: 'SignupPage', component: () => import('@/views/SignupPage.vue') },
   { path: '/terms', name: 'TermsOfService', component: () => import('@/views/TermsOfService.vue') },
   { path: '/profile', name: 'ProfilePage', component: () => import('@/views/ProfilePage.vue'), meta: { requiresAuth: true } },
-  { path: '/login', name: 'LoginPage', component: () => import('@/views/LoginPage.vue') }
+  { path: '/login', name: 'LoginPage', component: () => import('@/views/LoginPage.vue') },
+  { path: '/password', name: 'PasswordPage', component: () => import('@/views/PasswordPage.vue') },
+  { path: '/reset-password', name: 'ResetPassword', component: () => import('@/views/ResetPassword.vue') }
 ]
 
 const router = createRouter({

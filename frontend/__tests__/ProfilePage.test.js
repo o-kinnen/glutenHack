@@ -83,5 +83,39 @@ describe('ProfilePage.vue - Fetch Profile and Actions', () => {
 
     expect(wrapper.vm.errorMessage).toBe('Erreur lors de la déconnexion.');
   });
+
+  it('should delete account successfully', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+      })
+    );
+    window.confirm = jest.fn(() => true);
+    window.alert = jest.fn();
+  
+    await wrapper.vm.deleteAccount();
+    await flushPromises();
+  
+    expect(window.confirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.');
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/users/delete'), expect.objectContaining({ method: 'DELETE' }));
+    expect(window.alert).toHaveBeenCalledWith('Votre compte a été supprimé avec succès.');
+    expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('logout');
+    expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/login');
+  });
+  
+  it('should display error message if delete account fails', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: false,
+      })
+    );
+    window.confirm = jest.fn(() => true);
+  
+    await wrapper.vm.deleteAccount();
+    await flushPromises();
+  
+    expect(wrapper.vm.errorMessage).toBe('Erreur lors de la suppression du compte.');
+  });
+  
 });
 

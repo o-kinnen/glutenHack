@@ -23,6 +23,7 @@ describe('Profile Page Integration Test', () => {
       });
     
     if (response.status !== 201) {
+      console.error('Signup failed:', response.body);
       throw new Error('Failed to create test user');
     }
   });
@@ -36,10 +37,13 @@ describe('Profile Page Integration Test', () => {
         email: 'profileuser@example.com',
         password: 'TestPassword1!'
       });
+
+      console.log('Login response:', response.body);
     
     if (response.status === 200) {
       token = response.headers['set-cookie'][0];
     } else {
+      console.error('Login failed:', response.body);
       throw new Error('Failed to login test user');
     }
   });
@@ -77,6 +81,15 @@ describe('Profile Page Integration Test', () => {
 
     expect(response.status).toBe(401);
     expect(response.body.message).toBe('Accès non autorisé.');
-  });
+  }); 
+
+  it('should delete account successfully', async () => {
+    const response = await request(app)
+      .delete('/users/delete')
+      .set('Cookie', [token]);
+  
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Votre compte a été supprimé avec succès.');
+  }); 
 });
 

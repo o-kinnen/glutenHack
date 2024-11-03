@@ -17,6 +17,7 @@
                 </div>
                 <button type="submit" class="btn btn-light btn-block mb-3">Envoyer un email</button>
                 <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
+                <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
             </Form>
         </div>
     </div>

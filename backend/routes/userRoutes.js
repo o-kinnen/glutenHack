@@ -10,5 +10,8 @@ router.get('/profile', authMiddleware, userController.profileUser);
 router.get('/check-auth', authMiddleware, userController.checkAuth);
 router.post('/logout', userController.logoutUser);
 router.delete('/delete', authMiddleware, userController.deleteUser);
+router.post('/send-reset-link', userController.sendResetLink);
+router.post('/reset-password', userController.resetPassword);
+router.get('/verify-reset-token', userController.verifyResetToken);
 
 module.exports = router;

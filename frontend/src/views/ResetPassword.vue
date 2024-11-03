@@ -3,7 +3,7 @@
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card p-4">
-                    <Form @submit="resetPassword" class="resetPassword-form">
+                    <Form v-if="tokenValid" @submit="resetPassword" class="resetPassword-form">
                         <div class="mb-3">
                             <label for="password" class="form-label">Mot de passe</label>
                             <Field 
@@ -32,6 +32,9 @@
                     </Form>
                     <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
                     <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
+                    <div v-if="!tokenValid && !successMessage" class="alert alert-danger mt-3">
+                        Le lien de réinitialisation est invalide ou a expiré.
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,8 +86,22 @@ export default {
             confirmPassword: '',
             errorMessage: '',
             successMessage: '',
-            token: this.$route.query.token
+            token: this.$route.query.token,
+            tokenValid: false
         };
+    },
+    async created() {
+        try {
+            const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/verify-reset-token?token=${this.token}`);
+            const data = await response.json();
+            if (data.success) {
+                this.tokenValid = true;
+            } else {
+                this.errorMessage = data.message || 'Le lien de réinitialisation est invalide ou a expiré.';
+            }
+        } catch (error) {
+            this.errorMessage = 'Erreur lors de la vérification du token. Veuillez réessayer plus tard.';
+        }
     },
     methods: {
         async resetPassword () {

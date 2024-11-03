@@ -24,6 +24,13 @@ const User = {
   delete: async (id) => {
     const result = await pool.query('DELETE FROM public."users" WHERE id = $1 RETURNING *', [id]);
     return result.rows[0];
+  },
+  updatePassword: async (email, newPassword) => {
+    const result = await pool.query(
+      'UPDATE public."users" SET password = $1 WHERE email = $2 RETURNING *',
+      [newPassword, email]
+    );
+    return result.rows[0];
   }
 };
 

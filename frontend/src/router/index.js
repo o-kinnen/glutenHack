@@ -8,7 +8,8 @@ const routes = [
   { path: '/profile', name: 'ProfilePage', component: () => import('@/views/ProfilePage.vue'), meta: { requiresAuth: true } },
   { path: '/login', name: 'LoginPage', component: () => import('@/views/LoginPage.vue') },
   { path: '/password', name: 'PasswordPage', component: () => import('@/views/PasswordPage.vue') },
-  { path: '/reset-password', name: 'ResetPassword', component: () => import('@/views/ResetPassword.vue') }
+  { path: '/reset-password', name: 'ResetPassword', component: () => import('@/views/ResetPassword.vue') },
+  { path: '/recipe', name: 'RecipePage', component: () => import('@/views/RecipePage.vue'), meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({

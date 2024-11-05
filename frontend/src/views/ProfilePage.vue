@@ -6,7 +6,7 @@
         <p>Vos intolérances : <strong>{{ selectedIntolerancesText }}</strong></p>
         <p>Vos allergies : <strong>{{ selectedAllergiesText }}</strong></p>
         <div class="mt-4">
-          <button class="btn btn-primary mb-2" @click="showModal = true">Modifier le profil</button><br>
+          <button class="btn btn-primary mb-2" @click="modifyProfile">Modifier le profil</button><br>
           <button class="btn btn-secondary mb-2" @click="logout">Se déconnecter</button><br>
           <button class="btn btn-danger" @click="deleteAccount">Supprimer le compte</button>
         </div>
@@ -105,6 +105,9 @@
         this.allergies.forEach(allergy => {
           allergy.selected = allergies.includes(allergy.name);
         });
+      },
+      modifyProfile() {
+        this.showModal = true;
       },
       async submitForm() {
         const selectedIntolerances = this.intolerances.filter(item => item.selected).map(item => item.name);

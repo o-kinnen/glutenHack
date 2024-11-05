@@ -13,5 +13,6 @@ router.delete('/delete', authMiddleware, userController.deleteUser);
 router.post('/send-reset-link', userController.sendResetLink);
 router.post('/reset-password', userController.resetPassword);
 router.get('/verify-reset-token', userController.verifyResetToken);
+router.put('/update-preferences/:id', authMiddleware, userController.updateUserPreferences);
 
 module.exports = router;

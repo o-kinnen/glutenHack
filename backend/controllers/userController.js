@@ -17,7 +17,7 @@ exports.signupUser = async (req, res, next) => {
     const { username, email, password } = req.body;
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ message: 'Ce compte existe déjà.'});
+      return res.status(400).json({ message: 'Ce compte existe déjà.' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, password: hashedPassword });
@@ -28,9 +28,9 @@ exports.signupUser = async (req, res, next) => {
       sameSite: 'Strict',
       maxAge: 3600000
     });
-    res.status(201).json({ message: 'Utilisateur enregistré avec succès.'});
+    res.status(201).json({ message: 'Utilisateur enregistré avec succès.' });
   } catch (error) {
-    console.log('Erreur attrapée dans signupUser:', error.message); 
+    console.log('Erreur attrapée dans signupUser:', error.message);
     next(error);
   }
 };
@@ -73,9 +73,33 @@ exports.profileUser = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
-    res.status(200).json({ username: user.username, email: user.email });
+
+    const restrictions = await User.getRestrictionsByUserId(user.user_id);
+    const allergies = restrictions.filter(r => r.restriction_type === 'allergie').map(r => r.restriction_name);
+    const intolerances = restrictions.filter(r => r.restriction_type === 'intolérance').map(r => r.restriction_name);
+
+    res.status(200).json({
+      user_id: user.user_id,
+      username: user.username,
+      email: user.email,
+      allergies,
+      intolerances
+    });
   } catch (error) {
     console.log('Error:', error);
+    next(error);
+  }
+};
+
+exports.updateUserPreferences = async (req, res, next) => {
+  const userId = req.params.id;
+  const { allergies, intolerances } = req.body;
+
+  try {
+    await User.updateRestrictions(userId, allergies, intolerances);
+    res.status(200).json({ message: 'Préférences mises à jour avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des préférences :', error);
     next(error);
   }
 };
@@ -89,7 +113,7 @@ exports.checkAuth = async (req, res, next) => {
 };
 
 exports.logoutUser = (req, res) => {
-  const token = req.cookies.token; 
+  const token = req.cookies.token;
   if (!token) {
     return res.status(401).json({ message: 'Accès non autorisé.' });
   }
@@ -160,7 +184,7 @@ exports.resetPassword = async (req, res, next) => {
       }
       return res.status(400).json({ message: 'Token invalide.' });
     }
-    const user = await User.findByEmail(decoded.email); 
+    const user = await User.findByEmail(decoded.email);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }

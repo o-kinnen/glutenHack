@@ -31,6 +31,37 @@ const User = {
       [newPassword, email]
     );
     return result.rows[0];
+  },
+  getRestrictionsByUserId: async (user_id) => {
+    const result = await pool.query(
+      `SELECT restriction_name, restriction_type
+      FROM public."dietary_restrictions"
+      INNER JOIN public."user_restrictions" ON dietary_restrictions.restriction_id = user_restrictions.restriction_id
+      WHERE user_restrictions.user_id = $1`,
+      [user_id]
+    );
+    return result.rows;
+  },
+  updateRestrictions: async (user_id, allergies, intolerances) => {
+    await pool.query('DELETE FROM public."user_restrictions" WHERE user_id = $1', [user_id]);
+
+    if (allergies.length > 0) {
+      const allergyQuery = `
+        INSERT INTO public."user_restrictions" (user_id, restriction_id)
+        SELECT $1, restriction_id FROM public."dietary_restrictions"
+        WHERE restriction_name = ANY($2::text[]) AND restriction_type = 'allergie'
+      `;
+      await pool.query(allergyQuery, [user_id, allergies]);
+    }
+
+    if (intolerances.length > 0) {
+      const intoleranceQuery = `
+        INSERT INTO public."user_restrictions" (user_id, restriction_id)
+        SELECT $1, restriction_id FROM public."dietary_restrictions"
+        WHERE restriction_name = ANY($2::text[]) AND restriction_type = 'intolérance'
+      `;
+      await pool.query(intoleranceQuery, [user_id, intolerances]);
+   }
   }
 };
 

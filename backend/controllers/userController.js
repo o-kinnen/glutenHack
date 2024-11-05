@@ -21,7 +21,7 @@ exports.signupUser = async (req, res, next) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, password: hashedPassword });
-    const token = jwt.sign({ id: newUser.id_user, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ user_id: newUser.user_id, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV,
@@ -48,7 +48,7 @@ exports.loginUser = async (req, res, next) => {
       console.error('Incorrect password for email:', email);
       return res.status(401).json({ message: 'Mot de passe incorrect.' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ user_id: user.user_id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV,
@@ -69,7 +69,7 @@ exports.profileUser = async (req, res, next) => {
       return res.status(401).json({ message: 'Accès non autorisé.' });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.user_id);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
@@ -99,7 +99,7 @@ exports.logoutUser = (req, res) => {
 
 exports.deleteUser = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.user_id;
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });

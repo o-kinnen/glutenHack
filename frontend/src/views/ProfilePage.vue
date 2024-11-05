@@ -58,7 +58,6 @@ export default {
             }
         },
         modifyProfile() {
-            // Logique pour modifier le profil
             console.log('Modification du profil');
         },
         async deleteAccount () {

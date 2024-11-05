@@ -19,18 +19,21 @@ describe('Password Reset Integration Test', () => {
   });
 
   it('should send a reset password email if the user exists', async () => {
+    await pool.query('DELETE FROM public."users" WHERE email = $1', ['testuser@example.com']);
+  
     await pool.query(
       'INSERT INTO public."users" (username, email, password) VALUES ($1, $2, $3)',
       ['testuser', 'testuser@example.com', 'TestPassword1!']
     );
-
+  
     const response = await request(app)
       .post('/users/send-reset-link')
       .send({ email: 'testuser@example.com' });
-
+  
     expect(response.status).toBe(200);
     expect(response.body.message).toBe('Email de réinitialisation envoyé.');
   });
+  
 
   it('should return an error if the email does not exist', async () => {
     const response = await request(app)

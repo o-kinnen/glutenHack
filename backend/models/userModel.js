@@ -10,9 +10,9 @@ const User = {
       [email]);
     return result.rows[0];
   },
-  findById: async (id) => {
-    const result = await pool.query('SELECT * FROM public."users" WHERE id = $1', 
-      [id]);
+  findById: async (user_id) => {
+    const result = await pool.query('SELECT * FROM public."users" WHERE user_id = $1', 
+      [user_id]);
     return result.rows[0];
   },
   create: async (user) => {
@@ -21,8 +21,8 @@ const User = {
       [user.username, user.email, user.password]);
     return result.rows[0];
   },
-  delete: async (id) => {
-    const result = await pool.query('DELETE FROM public."users" WHERE id = $1 RETURNING *', [id]);
+  delete: async (user_id) => {
+    const result = await pool.query('DELETE FROM public."users" WHERE user_id = $1 RETURNING *', [user_id]);
     return result.rows[0];
   },
   updatePassword: async (email, newPassword) => {

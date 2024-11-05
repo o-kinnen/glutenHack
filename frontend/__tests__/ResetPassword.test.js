@@ -6,7 +6,6 @@ describe('ResetPassword.vue - Password Reset Form', () => {
   let wrapper;
 
   beforeEach(() => {
-    // Injecter un token valide dans $route.query
     wrapper = mount(ResetPassword, {
       global: {
         mocks: {
@@ -16,8 +15,6 @@ describe('ResetPassword.vue - Password Reset Form', () => {
         }
       }
     });
-
-    // S'assurer que le formulaire est affiché
     wrapper.setData({ tokenValid: true });
   });
 

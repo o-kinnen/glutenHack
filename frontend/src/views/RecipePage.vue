@@ -1,83 +1,100 @@
 <template>
-  <div class="recette-page">
-    <button @click="fetchRecettes" class="search-recipes-btn">
-      Rechercher des recettes
+  <div class="recipe-page">
+    <button @click="fetchRecipe" class="search-recipes-btn">
+      Rechercher une recette
     </button>
-    <div v-if="showRecettes && recettes.length > 0" class="recettes-container">
-      <div v-for="recette in recettes" :key="recette.id" class="recette-card">
-        <div class="recette-info">
-          <h3>{{ recette.name }}</h3>
-          <p>{{ recette.description }}</p>
-          <button @click="openModal(recette)">Voir les détails</button>
+    <div v-if="recipe" class="recipe-container">
+      <div class="recipe-card" style="width: 80vw; max-width: 50%;">
+        <div class="recipe-info">
+          <h3>{{ recipe.title }}</h3>
+          <button @click="openModal">Voir les détails</button>
         </div>
       </div>
     </div>
-    <modal v-if="selectedRecette" @close="closeModal" class="modal-overlay">
+    <modal v-if="showModal" @close="closeModal" class="modal-overlay">
       <div class="modal-content">
-        <h3>{{ selectedRecette.name }}</h3>
+        <h3>{{ recipe.title }}</h3>
         <h4>Ingrédients</h4>
         <ul>
-          <li v-for="ingredient in selectedRecette.ingredients" :key="ingredient">
+          <li v-for="ingredient in recipe.ingredients" :key="ingredient">
             {{ ingredient }}
           </li>
         </ul>
         <h4>Instructions</h4>
-        <p>{{ selectedRecette.instructions }}</p>
+        <ol>
+          <li v-for="instruction in recipe.instructions" :key="instruction">
+            {{ instruction }}
+          </li>
+        </ol>
         <button @click="closeModal">Fermer</button>
       </div>
     </modal>
   </div>
 </template>
-
+  
 <script>
 export default {
-  name: "RecettePage",
+  name: 'RecipePage',
   data() {
     return {
-      recettes: [
-        {
-          id: 1,
-          name: "Recette 1",
-          description: "Description 1",
-          ingredients: ["A", "B", "C"],
-          instructions: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-        },
-        {
-          id: 2,
-          name: "Recette 2",
-          description: "Description 2",
-          ingredients: ["D", "E", "F"],
-          instructions: "Suspendisse potenti. In faucibus massa arcu, eu aliquam."
-        },
-        {
-          id: 3,
-          name: "Recette 3",
-          description: "Description 3",
-          ingredients: ["G", "H", "I"],
-          instructions: "Cras lacinia magna vel molestie faucibus."
-        }
-      ],
-      selectedRecette: null,
-      showRecettes: false
+      recipe: null,
+      showModal: false,
     };
   },
   methods: {
-    fetchRecettes() {
-      // Pour l'instant, affiche les exemples de recettes
-      this.showRecettes = true;
+    async fetchRecipe() {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.VUE_APP_OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              {
+                role: 'user',
+                content: `content: Donne-moi une recette ayant aucune trace de gluten. 
+                Le format de la réponse doit être en JSON valide avec les clés suivantes :
+                "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
+                et la clé "instructions" doit être une liste d'étapes.`,
+              },
+            ],
+            max_tokens: 500,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const recipeData = JSON.parse(data.choices[0]?.message?.content);
+ 
+        this.recipe = {
+          title: recipeData.title,
+          ingredients: recipeData.ingredients,
+          instructions: recipeData.instructions,
+        };
+
+      } catch (error) {
+        console.error('Erreur lors de la recherche de la recette :', error);
+        alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
+      }
     },
-    openModal(recette) {
-      this.selectedRecette = recette;
+    openModal() {
+      this.showModal = true;
     },
     closeModal() {
-      this.selectedRecette = null;
+      this.showModal = false;
     },
   },
 };
 </script>
-
+  
 <style scoped>
-.recette-page {
+.recipe-page {
   text-align: center;
 }
 .search-recipes-btn {
@@ -85,12 +102,12 @@ export default {
   padding: 10px 20px;
   font-size: 1.2em;
 }
-.recettes-container {
+.recipe-container {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.recette-card {
+.recipe-card {
   background-color: #222;
   color: #fff;
   margin: 15px;
@@ -101,12 +118,7 @@ export default {
   flex-direction: row;
   align-items: center;
 }
-.recette-image {
-  width: 50px;
-  height: 50px;
-  margin-right: 20px;
-}
-.recette-info {
+.recipe-info {
   text-align: left;
 }
 button {
@@ -133,6 +145,8 @@ button:hover {
   z-index: 1000;
 }
 .modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
   background: #fff;
   padding: 20px;
   border-radius: 10px;
@@ -140,16 +154,4 @@ button:hover {
   max-width: 500px;
   text-align: left;
 }
-button {
-  background-color: #444;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-button:hover {
-  background-color: #555;
-}
 </style>
-  

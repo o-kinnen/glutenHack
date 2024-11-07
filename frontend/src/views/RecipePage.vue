@@ -44,12 +44,13 @@ export default {
   methods: {
     async fetchRecipe() {
       try {
-        const response = await fetch('/openai/recipe', {
+        const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/openai/recipe`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({}),
+          credentials: 'include'
         });
 
         if (!response.ok) {
@@ -57,13 +58,15 @@ export default {
         }
 
         const data = await response.json();
-        const recipeData = JSON.parse(data.choices[0]?.message?.content);
- 
-        this.recipe = {
-          title: recipeData.title,
-          ingredients: recipeData.ingredients,
-          instructions: recipeData.instructions,
-        };
+        if (data && data.title && data.ingredients && data.instructions) {
+          this.recipe = {
+            title: data.title,
+            ingredients: data.ingredients,
+            instructions: data.instructions,
+          };
+        } else {
+          throw new Error('Les données de la recette sont manquantes ou mal formatées.');
+        }
 
       } catch (error) {
         console.error('Erreur lors de la recherche de la recette :', error);

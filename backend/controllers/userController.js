@@ -75,15 +75,13 @@ exports.profileUser = async (req, res, next) => {
     }
 
     const restrictions = await User.getRestrictionsByUserId(user.user_id);
-    const allergies = restrictions.filter(r => r.restriction_type === 'allergie').map(r => r.restriction_name);
-    const intolerances = restrictions.filter(r => r.restriction_type === 'intolérance').map(r => r.restriction_name);
+    const restrictionNames = restrictions.map(r => r.ingredient_name);
 
     res.status(200).json({
       user_id: user.user_id,
       username: user.username,
       email: user.email,
-      allergies,
-      intolerances
+      restrictions: restrictionNames
     });
   } catch (error) {
     console.log('Error:', error);
@@ -93,16 +91,21 @@ exports.profileUser = async (req, res, next) => {
 
 exports.updateUserPreferences = async (req, res, next) => {
   const userId = req.params.id;
-  const { allergies, intolerances } = req.body;
+  const { restrictions } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: "L'ID de l'utilisateur est manquant." });
+  }
 
   try {
-    await User.updateRestrictions(userId, allergies, intolerances);
-    res.status(200).json({ message: 'Préférences mises à jour avec succès.' });
+    await User.updateRestrictions(userId, restrictions);
+    res.status(200).json({ message: 'Restrictions mises à jour avec succès.' });
   } catch (error) {
     console.error('Erreur lors de la mise à jour des préférences :', error);
-    next(error);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour des préférences.' });
   }
 };
+
 
 exports.checkAuth = async (req, res, next) => {
   try {

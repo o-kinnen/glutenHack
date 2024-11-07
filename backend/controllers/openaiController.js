@@ -1,11 +1,18 @@
 const axios = require('axios');
+const userModel = require('../models/userModel');
 
 const getRecipe = async (req, res) => {
   try {
-    const content = `Donne-moi une recette ayant aucune trace de gluten. 
+    const userId = req.user.user_id;
+    const restrictions = await userModel.getRestrictionsByUserId(userId);
+    const restrictionsList = restrictions.map(restriction => restriction.ingredient_name).join(', ');
+
+    const content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients. 
     Le format de la réponse doit être en JSON valide avec les clés suivantes :
-     "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
-     et la clé "instructions" doit être une liste d'étapes.`;
+    "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
+    et la clé "instructions" doit être une liste d'étapes.`;
+
+    console.log(content);
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -27,16 +34,29 @@ const getRecipe = async (req, res) => {
       }
     );
 
-    const recipeData = JSON.parse(response.data.choices[0]?.message?.content);
-
-    res.status(200).json({
-      title: recipeData.title,
-      ingredients: recipeData.ingredients,
-      instructions: recipeData.instructions,
-    });
+    if (response.data && response.data.choices && response.data.choices.length > 0) {
+      try {
+        const recipeData = JSON.parse(response.data.choices[0].message.content);
+        
+        if (recipeData && recipeData.title && recipeData.ingredients && recipeData.instructions) {
+          return res.status(200).json({
+            title: recipeData.title,
+            ingredients: recipeData.ingredients,
+            instructions: recipeData.instructions,
+          });
+        } else {
+          return res.status(500).json({ error: 'Les données de la recette sont manquantes ou mal formatées.' });
+        }
+      } catch (error) {
+        console.error('Erreur lors du parsing du contenu de la réponse :', error);
+        return res.status(500).json({ error: 'Erreur lors du traitement de la recette retournée.' });
+      }
+    } else {
+      return res.status(500).json({ error: 'Aucune recette retournée par l\'API OpenAI.' });
+    }
   } catch (error) {
     console.error('Erreur lors de l\'appel à OpenAI :', error);
-    res.status(500).json({ error: 'Erreur lors de la recherche de la recette' });
+    return res.status(500).json({ error: 'Erreur lors de la recherche de la recette' });
   }
 };
 

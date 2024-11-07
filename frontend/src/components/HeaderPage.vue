@@ -11,9 +11,6 @@
             <li class="nav-item" v-if="!isAuthenticated">
               <router-link to="/login" class="nav-link">Se connecter</router-link>
             </li>
-            <li class="nav-item" v-if="!isAuthenticated">
-              <router-link to="/password" class="nav-link">Mot de passe oublié ?</router-link>
-            </li>
             <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/recipe" class="nav-link">Recette</router-link>
             </li>

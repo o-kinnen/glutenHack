@@ -44,25 +44,12 @@ export default {
   methods: {
     async fetchRecipe() {
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch('/openai/recipe', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.VUE_APP_OPENAI_API_KEY}`,
           },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [
-              {
-                role: 'user',
-                content: `content: Donne-moi une recette ayant aucune trace de gluten. 
-                Le format de la réponse doit être en JSON valide avec les clés suivantes :
-                "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
-                et la clé "instructions" doit être une liste d'étapes.`,
-              },
-            ],
-            max_tokens: 500,
-          }),
+          body: JSON.stringify({}),
         });
 
         if (!response.ok) {

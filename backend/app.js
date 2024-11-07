@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
+const openaiRoutes = require('./routes/openaiRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/users', userRoutes);
+app.use('/openai', openaiRoutes);
 app.use(errorHandler);
 
 module.exports = app;

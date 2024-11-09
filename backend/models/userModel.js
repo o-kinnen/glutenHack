@@ -22,9 +22,19 @@ const User = {
     return result.rows[0];
   },
   delete: async (user_id) => {
-    const result = await pool.query('DELETE FROM public."users" WHERE user_id = $1 RETURNING *', [user_id]);
-    return result.rows[0];
-  },
+    try {
+      await pool.query('DELETE FROM public."dietary_restrictions" WHERE user_id = $1', [user_id]);
+      await pool.query('DELETE FROM public."favorites" WHERE user_id = $1', [user_id]);
+      await pool.query('DELETE FROM public."shopping_list_items" WHERE list_id IN (SELECT list_id FROM public."shopping_list" WHERE user_id = $1)', [user_id]);
+      await pool.query('DELETE FROM public."shopping_list" WHERE user_id = $1', [user_id]);
+      
+      const result = await pool.query('DELETE FROM public."users" WHERE user_id = $1 RETURNING *', [user_id]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'utilisateur :", error);
+      throw new Error('Erreur lors de la suppression de l’utilisateur.');
+    }
+  },  
   updatePassword: async (email, newPassword) => {
     const result = await pool.query(
       'UPDATE public."users" SET password = $1 WHERE email = $2 RETURNING *',

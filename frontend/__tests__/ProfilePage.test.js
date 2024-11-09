@@ -13,13 +13,12 @@ describe('ProfilePage.vue - Fetch Profile and Actions', () => {
           email: '',
           errorMessage: '',
           showModal: false,
-          intolerances: [
+          userId: 1,
+          restrictions: [
             { name: "Lactose", selected: false },
             { name: "Gluten", selected: false },
-          ],
-          allergies: [
-            { name: "Lait", selected: false },
-            { name: "Œufs", selected: false },
+            { name: "Arachide", selected: false },
+            { name: "Oeuf", selected: false },
           ],
         };
       },
@@ -128,8 +127,7 @@ describe('ProfilePage.vue - Fetch Profile and Actions', () => {
     expect(wrapper.vm.errorMessage).toBe('Erreur lors de la suppression du compte.');
   });
 
-  it('should call modifyProfile and log to console', async () => {
-    console.log = jest.fn();
+  it('should call modifyProfile and show modal', async () => {
     await wrapper.find('button.btn-primary').trigger('click');
     expect(wrapper.vm.showModal).toBe(true);
   });
@@ -147,23 +145,22 @@ describe('ProfilePage.vue - Fetch Profile and Actions', () => {
     expect(wrapper.find('.modal-content').exists()).toBe(true);
   });
 
-  it('should display allergy and intolerance options in modal', async () => {
+  it('should display restriction options in modal', async () => {
     wrapper.setData({ showModal: true });
     await flushPromises();
-    
-    const intoleranceOptions = wrapper.findAll('.section').at(0).findAll('label');
-    const allergyOptions = wrapper.findAll('.section').at(1).findAll('label');
-    
-    expect(intoleranceOptions.at(0).text()).toContain('Lactose');
-    expect(intoleranceOptions.at(1).text()).toContain('Gluten');
-    expect(allergyOptions.at(0).text()).toContain('Lait');
-    expect(allergyOptions.at(1).text()).toContain('Œufs');
+
+    const restrictionOptions = wrapper.findAll('.checkbox-group label');
+
+    expect(restrictionOptions.at(0).text()).toContain('Lactose');
+    expect(restrictionOptions.at(1).text()).toContain('Gluten');
+    expect(restrictionOptions.at(2).text()).toContain('Arachide');
+    expect(restrictionOptions.at(3).text()).toContain('Oeuf');
   });
 
-  it('should submit selected allergies and intolerances', async () => {
+  it('should submit selected restrictions', async () => {
     wrapper.setData({ showModal: true });
-    wrapper.vm.intolerances[0].selected = true; // Select Lactose
-    wrapper.vm.allergies[1].selected = true; // Select Œufs
+    wrapper.vm.restrictions[0].selected = true;
+    wrapper.vm.restrictions[2].selected = true;
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -175,13 +172,12 @@ describe('ProfilePage.vue - Fetch Profile and Actions', () => {
     await flushPromises();
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/users/update-preferences/'),
+      expect.stringContaining('/users/update-preferences/1'),
       expect.objectContaining({
         method: 'PUT',
-        body: JSON.stringify({ allergies: ['Œufs'], intolerances: ['Lactose'] }),
+        body: JSON.stringify({ restrictions: ['Lactose', 'Arachide'] }),
       })
     );
     expect(wrapper.vm.showModal).toBe(false);
   });
 });
-

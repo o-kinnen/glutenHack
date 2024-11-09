@@ -4,10 +4,14 @@ const userModel = require('../models/userModel');
 const getRecipe = async (req, res) => {
   try {
     const userId = req.user.user_id;
+    const { time, difficulty, cuisine, people, type } = req.body;
+
     const restrictions = await userModel.getRestrictionsByUserId(userId);
     const restrictionsList = restrictions.map(restriction => restriction.ingredient_name).join(', ');
 
-    const content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients. 
+    const content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui
+    répond au critère suivants :
+    Temps de préparation : ${time}. Difficulté : ${difficulty}. Cuisine : ${cuisine}. Nombre de personnes : ${people}. Type de repas : ${type}.
     Le format de la réponse doit être en JSON valide avec les clés suivantes :
     "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
     et la clé "instructions" doit être une liste d'étapes.`;
@@ -43,6 +47,11 @@ const getRecipe = async (req, res) => {
             title: recipeData.title,
             ingredients: recipeData.ingredients,
             instructions: recipeData.instructions,
+            time,
+            difficulty,
+            cuisine,
+            people,
+            type
           });
         } else {
           return res.status(500).json({ error: 'Les données de la recette sont manquantes ou mal formatées.' });

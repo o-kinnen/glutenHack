@@ -1,9 +1,11 @@
 <template>
   <div class="recipe-page">
+    <div class="add-ingredients-container">
+      <AddIngredients @ingredients-updated="updateIngredientsList" />
+    </div>
     <button @click="fetchRecipe" class="search-recipes-btn">
       Rechercher des recettes
     </button>
-
     <div class="filter-buttons">
       <div>
         <button @click="toggleTimeDropdown" class="dropdown-btn">
@@ -66,8 +68,10 @@
         </div>
       </div>
     </div>
-
-    <div v-if="recipe" class="recipe-container">
+    <div v-if="isLoading" class="loading-spinner">
+      Recherche en cours ...
+    </div>
+    <div v-if="recipe && !isLoading" class="recipe-container">
       <div class="recipe-card" style="width: 80vw; max-width: 70%;">
         <div class="recipe-info">
           <h3>{{ recipe.title }}</h3>
@@ -109,12 +113,17 @@
   
 <script>
 import axios from 'axios';
+import AddIngredients from '@/components/AddIngredients.vue'
 
 export default {
   name: 'RecipePage',
+  components: {
+    AddIngredients
+  },
   data() {
     return {
       recipe: null,
+      isLoading: false,
       showModal: false,
       showTimeDropdown: false,
       showDifficultyDropdown: false,
@@ -136,10 +145,12 @@ export default {
       cuisine: '',
       people: '',
       type: '',
+      availableIngredients: []
     };
   },
   methods: {
     async fetchRecipe() {
+      this.isLoading = true;
       try {
         const requestData = {
           time: this.selectedTime,
@@ -147,6 +158,7 @@ export default {
           cuisine: this.selectedCuisine,
           people: this.selectedPeople,
           type: this.selectedType,
+          availableIngredients: this.availableIngredients
         };
 
         console.log('Requête envoyée au backend :', requestData);
@@ -179,7 +191,12 @@ export default {
       } catch (error) {
         console.error('Erreur lors de la recherche de la recette :', error);
         alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
+      } finally {
+        this.isLoading = false;
       }
+    },
+    updateIngredientsList(ingredients) {
+      this.availableIngredients = ingredients;
     },
     openModal() {
       this.showModal = true;
@@ -229,6 +246,10 @@ export default {
 <style scoped>
 .recipe-page {
   text-align: center;
+}
+.loading-spinner {
+  font-size: 1.5em;
+  margin-top: 20px;
 }
 .search-recipes-btn {
   margin: 20px;
@@ -338,5 +359,10 @@ button:hover {
   border-radius: 5px;
   flex: 1;
   text-align: center;
+}
+.add-ingredients-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

@@ -4,15 +4,20 @@ const userModel = require('../models/userModel');
 const getRecipe = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const { time, difficulty, cuisine, people, type } = req.body;
+    const { time, difficulty, cuisine, people, type, availableIngredients } = req.body;
 
     const restrictions = await userModel.getRestrictionsByUserId(userId);
     const restrictionsList = restrictions.map(restriction => restriction.ingredient_name).join(', ');
 
-    const content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui
-    répond au critère suivants :
-    Temps de préparation : ${time}. Difficulté : ${difficulty}. Cuisine : ${cuisine}. Nombre de personnes : ${people}. Type de repas : ${type}.
-    Le format de la réponse doit être en JSON valide avec les clés suivantes :
+    let content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui répond au critère suivants :
+    Temps de préparation : ${time}. Difficulté : ${difficulty}. Cuisine : ${cuisine}. Nombre de personnes : ${people}. Type de repas : ${type}.`;
+
+    if (availableIngredients && availableIngredients.length > 0) {
+      const stockIngredients = availableIngredients.join(', ');
+      content += ` Que les ingrédients suivants soit obligatoirement utilisés si mes restrictions le permettent : ${stockIngredients}.`;
+    }
+
+    content += ` Le format de la réponse doit être en JSON valide avec les clés suivantes :
     "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
     et la clé "instructions" doit être une liste d'étapes.`;
 

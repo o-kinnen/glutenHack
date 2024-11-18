@@ -89,7 +89,6 @@ describe('Profile Page Integration Test', () => {
       .set('Cookie', [token]);
   
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Votre compte a été supprimé avec succès.');
+    expect(response.body.message).toBe('Compte utilisateur supprimé avec succès.');
   }); 
 });
-

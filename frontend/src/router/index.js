@@ -10,6 +10,9 @@ const routes = [
   { path: '/password', name: 'PasswordPage', component: () => import('@/views/PasswordPage.vue') },
   { path: '/reset-password', name: 'ResetPassword', component: () => import('@/views/ResetPassword.vue') },
   { path: '/recipe', name: 'RecipePage', component: () => import('@/views/RecipePage.vue'), meta: { requiresAuth: true } },
+  { path: '/my-recipe', name: 'MyRecipePage', component: () => import('@/views/MyRecipePage.vue'), meta: { requiresAuth: true } },
+  { path: '/search', name: 'SearchPage', component: () => import('@/views/SearchPage.vue'), meta: { requiresAuth: true } },
+  { path: '/grocery', name: 'GroceryList', component: () => import('@/views/GroceryList.vue'), meta: { requiresAuth: true } }
 ]
 
 const router = createRouter({

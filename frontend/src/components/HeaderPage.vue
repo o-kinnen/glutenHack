@@ -12,7 +12,16 @@
               <router-link to="/login" class="nav-link">Se connecter</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/search" class="nav-link">Recherche</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/recipe" class="nav-link">Recette</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/my-recipe" class="nav-link">Favoris</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/grocery" class="nav-link">Liste des courses</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/profile" class="nav-link">Profil</router-link>

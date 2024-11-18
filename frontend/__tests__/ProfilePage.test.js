@@ -110,7 +110,7 @@ describe('ProfilePage.vue - Fetch Profile and Actions', () => {
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/users/delete'), expect.objectContaining({ method: 'DELETE' }));
     expect(window.alert).toHaveBeenCalledWith('Votre compte a été supprimé avec succès.');
     expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('logout');
-    expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/login');
+    expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/');
   });
 
   it('should display error message if delete account fails', async () => {

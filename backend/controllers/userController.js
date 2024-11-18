@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const User = require('../models/userModel');
+const pool = require('../utils/db');
 
 exports.getAllUsers = async (req, res, next) => {
   try {
@@ -26,11 +27,11 @@ exports.signupUser = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV,
       sameSite: 'Strict',
-      maxAge: 3600000
+      maxAge: 3600000,
     });
     res.status(201).json({ message: 'Utilisateur enregistré avec succès.' });
   } catch (error) {
-    console.log('Erreur attrapée dans signupUser:', error.message);
+    console.error('Erreur attrapée dans signupUser:', error.message);
     next(error);
   }
 };
@@ -40,24 +41,33 @@ exports.loginUser = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.findByEmail(email);
     if (!user) {
-      console.error('User not found with email:', email);
       return res.status(404).json({ message: 'Compte non trouvé.' });
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      console.error('Incorrect password for email:', email);
       return res.status(401).json({ message: 'Mot de passe incorrect.' });
     }
+
+    const restrictions = await User.getRestrictionsByUserId(user.user_id);
     const token = jwt.sign({ user_id: user.user_id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
-      maxAge: 3600000
+      maxAge: 3600000,
     });
-    res.status(200).json({ message: 'Connexion réussie.' });
+
+    res.status(200).json({
+      message: 'Connexion réussie.',
+      user: {
+        user_id: user.user_id,
+        email: user.email,
+        restrictions,
+      },
+    });
   } catch (error) {
-    console.error('Error logging in user:', error);
+    console.error('Erreur lors de la connexion de l’utilisateur :', error);
     next(error);
   }
 };
@@ -68,6 +78,7 @@ exports.profileUser = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({ message: 'Accès non autorisé.' });
     }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.user_id);
     if (!user) {
@@ -75,16 +86,15 @@ exports.profileUser = async (req, res, next) => {
     }
 
     const restrictions = await User.getRestrictionsByUserId(user.user_id);
-    const restrictionNames = restrictions.map(r => r.ingredient_name);
 
     res.status(200).json({
       user_id: user.user_id,
       username: user.username,
       email: user.email,
-      restrictions: restrictionNames
+      restrictions,
     });
   } catch (error) {
-    console.log('Error:', error);
+    console.error('Erreur lors de la récupération du profil :', error);
     next(error);
   }
 };
@@ -98,14 +108,21 @@ exports.updateUserPreferences = async (req, res, next) => {
   }
 
   try {
-    await User.updateRestrictions(userId, restrictions);
+    const allergenIds = [];
+    for (const restriction of restrictions) {
+      const result = await pool.query('SELECT allergen_id FROM "allergens" WHERE allergen_name = $1', [restriction]);
+      if (result.rows.length > 0) {
+        allergenIds.push(result.rows[0].allergen_id);
+      }
+    }
+
+    await User.updateRestrictions(userId, allergenIds);
     res.status(200).json({ message: 'Restrictions mises à jour avec succès.' });
   } catch (error) {
     console.error('Erreur lors de la mise à jour des préférences :', error);
     res.status(500).json({ message: 'Erreur lors de la mise à jour des préférences.' });
   }
 };
-
 
 exports.checkAuth = async (req, res, next) => {
   try {
@@ -126,14 +143,22 @@ exports.logoutUser = (req, res) => {
 
 exports.deleteUser = async (req, res, next) => {
   try {
-    const userId = req.user.user_id;
-    const user = await User.findById(userId);
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ message: 'Accès non autorisé.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.user_id);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
-    await User.delete(userId);
-    res.status(200).json({ message: 'Votre compte a été supprimé avec succès.' });
+
+    await User.delete(user.user_id);
+    res.clearCookie('token');
+    res.status(200).json({ message: 'Compte utilisateur supprimé avec succès.' });
   } catch (error) {
+    console.error('Erreur lors de la suppression de l’utilisateur :', error);
     next(error);
   }
 };
@@ -153,17 +178,17 @@ exports.sendResetLink = async (req, res, next) => {
       secure: false,
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS,
       },
       tls: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+      },
     });
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: 'Réinitialisation du mot de passe',
-      html: `Cliquez sur ce <a href="${resetLink}">lien</a> pour réinitialiser votre mot de passe (valide pendant 15 minutes).`
+      html: `Cliquez sur ce <a href="${resetLink}">lien</a> pour réinitialiser votre mot de passe (valide pendant 15 minutes).`,
     };
     await transporter.sendMail(mailOptions);
     res.status(200).json({ success: true, message: 'Email de réinitialisation envoyé.' });

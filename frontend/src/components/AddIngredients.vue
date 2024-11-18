@@ -11,7 +11,6 @@
         Ajouter
       </button>
     </div>
-    <!-- Indicateur de chargement -->
     <div v-if="isLoading" class="loading-spinner">Chargement...</div>
     <ul class="ingredient-list">
       <li v-for="(ingredient, index) in ingredients" :key="index">
@@ -29,21 +28,21 @@ export default {
     return {
       newIngredient: "",
       ingredients: [],
-      isLoading: false // Indique si une recherche est en cours
+      isLoading: false
     };
   },
   methods: {
     async addIngredient() {
-      const isBarcode = /^\d+$/.test(this.newIngredient.trim()); // Vérifie si c'est un code-barres (entièrement numérique)
+      const isBarcode = /^\d+$/.test(this.newIngredient.trim());
 
       if (isBarcode) {
-        this.isLoading = true; // Début du chargement
+        this.isLoading = true;
         try {
           const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${this.newIngredient}.json`);
           const data = await response.json();
           if (data && data.status === 1 && data.product && data.product.product_name) {
             const productName = data.product.product_name;
-            this.ingredients.push(productName); // Ajoute le nom du produit détecté
+            this.ingredients.push(productName);
           } else {
             alert("Produit non trouvé pour ce code-barres.");
           }
@@ -51,20 +50,20 @@ export default {
           console.error("Erreur lors de la recherche du produit :", error);
           alert("Une erreur est survenue lors de la recherche du produit.");
         } finally {
-          this.isLoading = false; // Fin du chargement
+          this.isLoading = false;
         }
       } else {
         if (this.newIngredient.trim()) {
-          this.ingredients.push(this.newIngredient.trim()); // Ajoute l'ingrédient manuellement
+          this.ingredients.push(this.newIngredient.trim());
         }
       }
 
-      this.newIngredient = ""; // Réinitialise le champ d'entrée
-      this.$emit("ingredients-updated", this.ingredients); // Émet les ingrédients mis à jour
+      this.newIngredient = "";
+      this.$emit("ingredients-updated", this.ingredients);
     },
     removeIngredient(index) {
       this.ingredients.splice(index, 1);
-      this.$emit("ingredients-updated", this.ingredients); // Émet les ingrédients mis à jour
+      this.$emit("ingredients-updated", this.ingredients);
     }
   }
 };

@@ -6,8 +6,7 @@ const getRecipe = async (req, res) => {
     const userId = req.user.user_id;
     const { time, difficulty, cuisine, people, type, availableIngredients } = req.body;
 
-    const restrictions = await userModel.getRestrictionsByUserId(userId);
-    const restrictionsList = restrictions.map(restriction => restriction.ingredient_name).join(', ');
+    const restrictionsList = await userModel.getRestrictionsByUserId(userId);
 
     let content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui répond au critère suivants :
     Temps de préparation : ${time}. Difficulté : ${difficulty}. Cuisine : ${cuisine}. Nombre de personnes : ${people}. Type de repas : ${type}.`;

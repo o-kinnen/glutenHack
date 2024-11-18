@@ -130,7 +130,8 @@ export default {
           });
           if (response.ok) {
             alert('Votre compte a été supprimé avec succès.');
-            this.logout();
+            this.$store.dispatch('logout');
+            this.$router.push('/');
           } else {
             this.errorMessage = 'Erreur lors de la suppression du compte.';
           }

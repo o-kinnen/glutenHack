@@ -5,6 +5,7 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const openaiRoutes = require('./routes/openaiRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
+const shoppingListRoutes = require('./routes/shoppingListRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/users', userRoutes);
 app.use('/openai', openaiRoutes);
 app.use('/recipes', recipeRoutes);
+app.use('/shopping-list', shoppingListRoutes);
 app.use(errorHandler);
 
 module.exports = app;

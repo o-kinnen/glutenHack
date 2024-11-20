@@ -40,6 +40,7 @@
             {{ step }}
           </li>
         </ol>
+        <button @click="addToShoppingList">Ajouter à la liste des courses</button>
         <button @click="closeModal">Fermer</button>
       </div>
     </div>
@@ -76,6 +77,21 @@ export default {
         this.errorMessage = 'Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.';
       }
     },
+    async addToShoppingList() {
+      try {
+        const response = await axios.post(
+          `${process.env.VUE_APP_URL_BACKEND}/shopping-list/add`,
+          {
+            recipeId: this.currentRecipe.recipe_id
+          },
+          { withCredentials: true }
+        );
+        alert(response.data.message);
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout à la liste des courses:', error);
+        alert('Une erreur est survenue.');
+      }
+    },
     openModal(index) {
       this.currentRecipe = this.recipes[index];
       this.showModal = true;
@@ -83,7 +99,7 @@ export default {
     closeModal() {
       this.showModal = false;
       this.currentRecipe = null;
-    },
+    }
   },
   mounted() {
     this.fetchRecipes();

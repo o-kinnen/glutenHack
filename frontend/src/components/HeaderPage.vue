@@ -15,13 +15,16 @@
               <router-link to="/search" class="nav-link">Recherche</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
-              <router-link to="/recipe" class="nav-link">Recette</router-link>
+              <router-link to="/recipe" class="nav-link">Générer une recette</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
-              <router-link to="/my-recipe" class="nav-link">Favoris</router-link>
+              <router-link to="/my-recipe" class="nav-link">Toutes les recettes</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/grocery" class="nav-link">Liste des courses</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/planner" class="nav-link">Planification</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/profile" class="nav-link">Profil</router-link>

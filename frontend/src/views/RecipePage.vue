@@ -4,7 +4,7 @@
       <AddIngredients @ingredients-updated="updateIngredientsList" />
     </div>
     <button @click="fetchRecipe" class="search-recipes-btn">
-      Rechercher des recettes
+      Rechercher des recettes avec l'IA
     </button>
     <div class="filter-buttons">
       <div>
@@ -75,6 +75,7 @@
       <div class="recipe-card" style="width: 80vw; max-width: 70%;">
         <div class="recipe-info">
           <h3>{{ recipe.title }}</h3>
+          <img>
           <button @click="openModal">Voir les détails</button>
         </div>
       </div>
@@ -84,19 +85,22 @@
         <h3 style="text-align: center;">{{ recipe.title }}</h3>
         <div class="recipe-info-container">
           <div class="recipe-info-line">
-          <div class="info-item"><strong>Temps de préparation:</strong> {{ time }}</div>
-          <div class="info-item"><strong>Difficulté:</strong> {{ difficulty }}</div>
-          <div class="info-item"><strong>Nombre de personnes:</strong> {{ people }}</div>
+          <div class="info-item"><strong>Temps de préparation:</strong> {{ recipe.time }}</div>
+          <div class="info-item"><strong>Difficulté:</strong> {{ recipe.difficulty }}</div>
+          <div class="info-item"><strong>Nombre de personnes:</strong> {{ recipe.people }}</div>
         </div>
         <div class="recipe-info-line">
-          <div class="info-item"><strong>Cuisine:</strong> {{ cuisine }}</div>
-          <div class="info-item"><strong>Type:</strong> {{ type }}</div>
+          <div class="info-item"><strong>Cuisine:</strong> {{ recipe.cuisine }}</div>
+          <div class="info-item"><strong>Type:</strong> {{ recipe.type }}</div>
+          <div v-for="allergen in recipe.restrictionsList" :key="allergen" class="info-item">
+            <strong>Sans allergène:</strong> {{ allergen }}
+          </div>
         </div>
       </div>
         <h4>Ingrédients</h4>
         <ul>
-          <li v-for="ingredient in recipe.ingredients" :key="ingredient">
-            {{ ingredient }}
+          <li v-for="(ingredient, index) in recipe.ingredients" :key="index">
+            {{ recipe.quantity[index] }} {{ ingredient }}
           </li>
         </ul>
         <h4>Instructions</h4>
@@ -105,6 +109,7 @@
             {{ instruction }}
           </li>
         </ol>
+        <button @click="saveRecipe" v-if="recipe">Valider la recette</button>
         <button @click="closeModal">Fermer</button>
       </div>
     </modal>
@@ -161,8 +166,6 @@ export default {
           availableIngredients: this.availableIngredients
         };
 
-        console.log('Requête envoyée au backend :', requestData);
-
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`, requestData,
           {
@@ -177,13 +180,16 @@ export default {
           this.recipe = {
             title: response.data.title,
             ingredients: response.data.ingredients,
-            instructions: response.data.instructions
+            instructions: response.data.instructions,
+            quantity: response.data.quantity,
+            time: response.data.time,
+            difficulty: response.data.difficulty,
+            cuisine: response.data.cuisine,
+            people: response.data.people,
+            type: response.data.type,
+            image: response.data.image,
+            restrictionsList: response.data.restrictionsList
           };
-          this.time = requestData.time;
-          this.difficulty = requestData.difficulty;
-          this.cuisine = requestData.cuisine;
-          this.people = requestData.people;
-          this.type = requestData.type;
         } else {
           throw new Error('Les données de la recette sont manquantes ou mal formatées.');
         }
@@ -193,6 +199,32 @@ export default {
         alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
       } finally {
         this.isLoading = false;
+      }
+    },
+    async saveRecipe() {
+      try {
+        const requestData = {
+          recipe: this.recipe,
+          ingredients: this.recipe.ingredients.map((ingredient) => ({
+            food_id: ingredient.food_id,
+            quantity: ingredient.quantity,
+          })),
+        };
+    
+        const response = await axios.post(
+          `${process.env.VUE_APP_URL_BACKEND}/recipes/save`,
+          requestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+        );
+        alert('Recette enregistrée avec succès !');
+        console.log('Recette enregistrée avec l\'ID :', response.data.recipeId);
+      } catch (error) {
+      console.error('Erreur lors de l\'enregistrement de la recette :', error);
+      alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
       }
     },
     updateIngredientsList(ingredients) {

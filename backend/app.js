@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const openaiRoutes = require('./routes/openaiRoutes');
+const recipeRoutes = require('./routes/recipeRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/users', userRoutes);
 app.use('/openai', openaiRoutes);
+app.use('/recipes', recipeRoutes);
 app.use(errorHandler);
 
 module.exports = app;

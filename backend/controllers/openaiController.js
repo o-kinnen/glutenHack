@@ -1,5 +1,6 @@
 const axios = require('axios');
 const userModel = require('../models/userModel');
+const recipeModel = require('../models/recipeModel');
 
 const getRecipe = async (req, res) => {
   try {
@@ -17,8 +18,10 @@ const getRecipe = async (req, res) => {
     }
 
     content += ` Le format de la réponse doit être en JSON valide avec les clés suivantes :
-    "title", "ingredients", "instructions". La clé "ingredients" doit être une liste d'ingrédients, 
-    et la clé "instructions" doit être une liste d'étapes.`;
+    "restrictionsList" dont la valeur est égale à une liste contenant les éléments suivants ${restrictionsList},
+    la variable "image" qui doit être une photo de la recette que tu vas générer,
+    "title", "ingredients", "quantity" et "instructions". La clé "ingredients" doit être une liste d'ingrédients (les aliments) 
+    au singulier en minuscules, la clé "quantity" est la quantité pour chaque ingrédient et la clé "instructions" doit être une liste d'étapes.`;
 
     console.log(content);
 
@@ -51,11 +54,14 @@ const getRecipe = async (req, res) => {
             title: recipeData.title,
             ingredients: recipeData.ingredients,
             instructions: recipeData.instructions,
-            time,
-            difficulty,
-            cuisine,
-            people,
-            type
+            quantity: recipeData.quantity,
+            time: time,
+            difficulty: difficulty,
+            cuisine: cuisine,
+            people: people,
+            type: type,
+            image: recipeData.image,
+            restrictionsList: recipeData.restrictionsList
           });
         } else {
           return res.status(500).json({ error: 'Les données de la recette sont manquantes ou mal formatées.' });
@@ -73,6 +79,41 @@ const getRecipe = async (req, res) => {
   }
 };
 
+const saveRecipe = async (req, res) => {
+  try {
+    const { recipe} = req.body;
+
+    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
+      return res.status(400).json({ error: 'La recette doit contenir des ingrédients.' });
+    }
+
+    const ingredients = recipe.ingredients.map((ingredient, index) => ({
+      name: ingredient,
+      quantity: recipe.quantity[index] || 'N/A'
+    }));
+
+    const recipeData = {
+      recipe_name: recipe.title,
+      instructions: recipe.instructions.join('\n'),
+      preparation_time: recipe.time,
+      difficulty: recipe.difficulty,
+      cuisine_type: recipe.cuisine,
+      number_of_person: recipe.people,
+      category_type: recipe.type,
+      ingredients,
+    };
+
+    const recipeId = await recipeModel.saveRecipe(recipeData);
+
+    return res.status(201).json({ message: 'Recette enregistrée avec succès', recipeId });
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement de la recette :', error);
+    return res.status(500).json({ error: 'Erreur lors de l\'enregistrement de la recette.' });
+  }
+};
+
+
 module.exports = {
   getRecipe,
+  saveRecipe
 };

@@ -1,12 +1,14 @@
 <template>
   <div class="recipe-page">
     <h2>Toutes les recettes</h2>
-    <div class="recipes-list">
-      <div 
-        v-for="(recipe, index) in recipes" 
-        :key="recipe.recipe_id" 
-        class="recipe-card"
-      >
+    <div v-if="errorMessage" class="error-message">
+      <p>{{ errorMessage }}</p>
+    </div>
+    <div v-if="recipes.length === 0" class="no-recipes">
+      <p>Aucune recette n'a été enregistrée pour le moment.</p>
+    </div>
+    <div v-else class="recipes-list">
+      <div v-for="(recipe, index) in recipes" :key="recipe.recipe_id" class="recipe-card">
         <h3>{{ recipe.recipe_name }}</h3>
         <button @click="openModal(index)">Voir les détails</button>
       </div>
@@ -46,31 +48,32 @@
 
 <script>
 import axios from 'axios';
-
 export default {
   name: 'MyRecipePage',
   data() {
     return {
       recipes: [],
       showModal: false,
-      currentRecipe: null
+      currentRecipe: null,
+      errorMessage: ''
     };
   },
   computed: {
     formattedInstructionsArray() {
-      return this.currentRecipe?.instructions
-        ? this.currentRecipe.instructions.split('\n').filter((step) => step.trim() !== '')
-        : [];
+      return this.currentRecipe?.instructions ? this.currentRecipe.instructions.split('\n').filter((step) => step.trim() !== '') : [];
     },
   },
   methods: {
     async fetchRecipes() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/all`);
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/all`, {
+          withCredentials: true ,
+        });
         this.recipes = response.data;
-        console.log('Données reçues depuis l\'API :', response.data)
+        this.errorMessage = '';
       } catch (error) {
         console.error('Erreur lors de la récupération des recettes :', error);
+        this.errorMessage = 'Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.';
       }
     },
     openModal(index) {
@@ -160,5 +163,21 @@ button:hover {
   justify-content: space-between;
   margin-bottom: 10px;
   gap: 15px;
+}
+.error-message {
+  background-color: #ffcccc;
+  color: #cc0000;
+  border: 1px solid #cc0000;
+  padding: 10px;
+  margin: 20px auto;
+  max-width: 600px;
+  text-align: center;
+  border-radius: 5px;
+}
+.no-recipes {
+  text-align: center;
+  font-size: 1.2em;
+  color: #666;
+  margin-top: 20px;
 }
 </style>

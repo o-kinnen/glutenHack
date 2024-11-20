@@ -12,4 +12,3 @@ exports.getAllRecipes = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur lors de la récupération des recettes.' });
   }
 };
-

@@ -3,7 +3,7 @@
       <div class="card p-4 bg-dark text-white">
         <h2>Bienvenue {{ username }} !</h2>
         <p>Votre adresse mail : <strong>{{ email }}</strong></p>
-        <p>Vos restrictions alimentaires : <strong>{{ selectedRestrictionsText }}</strong></p>
+        <p>Vos allergènes : <strong>{{ selectedRestrictionsText }}</strong></p>
         <div class="mt-4">
           <button class="btn btn-primary mb-2" @click="modifyProfile">Modifier le profil</button><br>
           <button class="btn btn-secondary mb-2" @click="logout">Se déconnecter</button><br>
@@ -12,7 +12,7 @@
       </div>
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
-        <h2>Mes Allergies et Intolérances</h2>
+        <h2>Mes allergènes</h2>
         <form @submit.prevent="submitForm">
           <div class="checkbox-group">
             <label v-for="restriction in restrictions" :key="restriction.name">

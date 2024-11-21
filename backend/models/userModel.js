@@ -65,22 +65,24 @@ const User = {
 
   updateRestrictions: async (user_id, allergenIds) => {
     try {
-      if (!user_id || allergenIds.length === 0) {
-        throw new Error("L'ID utilisateur ou les allergènes sont manquants.");
-      }
+        if (!user_id) {
+            throw new Error("L'ID utilisateur est manquant.");
+        }
+        
+        await pool.query('DELETE FROM "dietary_restrictions" WHERE user_id = $1', [user_id]);
 
-      await pool.query('DELETE FROM "dietary_restrictions" WHERE user_id = $1', [user_id]);
-
-      const insertQuery = `
-        INSERT INTO "dietary_restrictions" (user_id, allergen_id, created_at)
-        SELECT $1, unnest($2::int[]), CURRENT_TIMESTAMP
-      `;
-      await pool.query(insertQuery, [user_id, allergenIds]);
+        if (allergenIds.length > 0) {
+            const insertQuery = `
+                INSERT INTO "dietary_restrictions" (user_id, allergen_id, created_at)
+                SELECT $1, unnest($2::int[]), CURRENT_TIMESTAMP
+            `;
+            await pool.query(insertQuery, [user_id, allergenIds]);
+        }
     } catch (error) {
-      console.error("Erreur lors de la mise à jour des restrictions alimentaires :", error);
-      throw new Error('Erreur lors de la mise à jour des restrictions.');
+        console.error("Erreur lors de la mise à jour des restrictions alimentaires :", error);
+        throw new Error('Erreur lors de la mise à jour des restrictions.');
     }
-  },
+  }
 };
 
 module.exports = User;

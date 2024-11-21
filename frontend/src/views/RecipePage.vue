@@ -113,6 +113,17 @@
         <button @click="closeModal">Fermer</button>
       </div>
     </modal>
+    <modal v-if="showAllergenAlert" @close="showAllergenAlert = false" class="modal-overlay">
+      <div class="modal-content">
+        <h3 style="text-align: center;">Aucun allergène enregistré dans votre profil</h3>
+        <p style="text-align: center;">Souhaitez-vous continuer ou modifier votre profil ?</p>
+        <p>Si vous continuez la recette générée par l'IA ne prendra pas en compte vos allergènes</p>
+        <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+          <button @click="proceedWithoutAllergens" class="confirm-btn">Continuer</button>
+          <button @click="redirectToProfile" class="profile-btn">Modifier le profil</button>
+        </div>
+      </div>
+    </modal>
   </div>
 </template>
   
@@ -130,6 +141,7 @@ export default {
       recipe: null,
       isLoading: false,
       showModal: false,
+      showAllergenAlert: false,
       showTimeDropdown: false,
       showDifficultyDropdown: false,
       showCuisineDropdown: false,
@@ -154,53 +166,80 @@ export default {
     };
   },
   methods: {
-    async fetchRecipe() {
-      this.isLoading = true;
+    async getUserRestrictions() {
       try {
-        const requestData = {
-          time: this.selectedTime,
-          difficulty: this.selectedDifficulty,
-          cuisine: this.selectedCuisine,
-          people: this.selectedPeople,
-          type: this.selectedType,
-          availableIngredients: this.availableIngredients
-        };
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
+        withCredentials: true
+      });
 
-        const response = await axios.post(
-          `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`, requestData,
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            withCredentials: true
-          }
-        );
-
-        if (response.data && response.data.title && response.data.ingredients && response.data.instructions) {
-          this.recipe = {
-            title: response.data.title,
-            ingredients: response.data.ingredients,
-            instructions: response.data.instructions,
-            quantity: response.data.quantity,
-            time: response.data.time,
-            difficulty: response.data.difficulty,
-            cuisine: response.data.cuisine,
-            people: response.data.people,
-            type: response.data.type,
-            image: response.data.image,
-            restrictionsList: response.data.restrictionsList
-          };
-        } else {
-          throw new Error('Les données de la recette sont manquantes ou mal formatées.');
-        }
-
+      return response.data.restrictions || [];
       } catch (error) {
-        console.error('Erreur lors de la recherche de la recette :', error);
-        alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
-      } finally {
-        this.isLoading = false;
+        console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
+        alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
+        return [];
       }
     },
+    async fetchRecipe() {
+      try {
+        const restrictions = await this.getUserRestrictions();
+
+        if (!restrictions || restrictions.length === 0) {
+          this.showAllergenAlert = true;
+        } else {
+          this.executeRecipeLogic();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification des restrictions alimentaires :', error);
+        alert('Une erreur est survenue. Veuillez réessayer.');
+      }
+    },
+  async executeRecipeLogic() {
+    this.isLoading = true;
+    try {
+      const requestData = {
+        time: this.selectedTime,
+        difficulty: this.selectedDifficulty,
+        cuisine: this.selectedCuisine,
+        people: this.selectedPeople,
+        type: this.selectedType,
+        availableIngredients: this.availableIngredients,
+      };
+
+      const response = await axios.post(
+        `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`,
+        requestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true,
+        }
+      );
+
+      if (response.data && response.data.title && response.data.ingredients && response.data.instructions) {
+        this.recipe = {
+          title: response.data.title,
+          ingredients: response.data.ingredients,
+          instructions: response.data.instructions,
+          quantity: response.data.quantity,
+          time: response.data.time,
+          difficulty: response.data.difficulty,
+          cuisine: response.data.cuisine,
+          people: response.data.people,
+          type: response.data.type,
+          image: response.data.image,
+          restrictionsList: response.data.restrictionsList,
+        };
+      } else {
+        throw new Error('Les données de la recette sont manquantes ou mal formatées.');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche de la recette :', error);
+      alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
+    } finally {
+      this.isLoading = false;
+    }
+  },
     async saveRecipe() {
       try {
         const requestData = {
@@ -211,7 +250,7 @@ export default {
           })),
         };
     
-        const response = await axios.post(
+        await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/recipes/save`,
           requestData,
         {
@@ -221,7 +260,6 @@ export default {
         }
         );
         alert('Recette enregistrée avec succès !');
-        console.log('Recette enregistrée avec l\'ID :', response.data.recipeId);
       } catch (error) {
       console.error('Erreur lors de l\'enregistrement de la recette :', error);
       alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
@@ -270,6 +308,14 @@ export default {
     selectType(option) {
       this.selectedType = option;
       this.showTypeDropdown = false;
+    },
+    proceedWithoutAllergens() {
+      this.showAllergenAlert = false;
+      this.executeRecipeLogic();
+    },
+    redirectToProfile() {
+      this.showAllergenAlert = false;
+      this.$router.push('/profile');
     },
   },
 };
@@ -396,5 +442,49 @@ button:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 500px;
+  text-align: center;
+}
+.confirm-btn {
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.confirm-btn:hover {
+  background-color: #45a049;
+}
+.profile-btn {
+  background-color: #2196f3;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.profile-btn:hover {
+  background-color: #0b7dda;
 }
 </style>

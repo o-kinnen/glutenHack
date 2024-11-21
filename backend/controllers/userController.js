@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 const User = require('../models/userModel');
 const pool = require('../utils/db');
 
+
 exports.getAllUsers = async (req, res, next) => {
   try {
     const users = await User.getAll();
@@ -235,5 +236,17 @@ exports.verifyResetToken = (req, res) => {
     res.status(200).json({ success: true, message: 'Token valide' });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Token invalide ou expiré' });
+  }
+};
+
+exports.getRestrictionsByUserId = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const restrictions = await User.getRestrictionsByUserId(userId);
+
+    return res.status(200).json({ restrictions });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
+    return res.status(500).json({ error: 'Erreur lors de la récupération des restrictions alimentaires.' });
   }
 };

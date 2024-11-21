@@ -92,8 +92,8 @@
         <div class="recipe-info-line">
           <div class="info-item"><strong>Cuisine:</strong> {{ recipe.cuisine }}</div>
           <div class="info-item"><strong>Type:</strong> {{ recipe.type }}</div>
-          <div v-for="allergen in recipe.restrictionsList" :key="allergen" class="info-item">
-            <strong>Sans allergène:</strong> {{ allergen }}
+          <div v-if="recipe.restrictionsList && recipe.restrictionsList.length" class="info-item">
+            <strong>Sans allergène:</strong> {{ recipe.restrictionsList.join(', ') }}
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@
       <div class="modal-content">
         <h3 style="text-align: center;">Aucun allergène enregistré dans votre profil</h3>
         <p style="text-align: center;">Souhaitez-vous continuer ou modifier votre profil ?</p>
-        <p>Si vous continuez la recette générée par l'IA ne prendra pas en compte vos allergènes</p>
+        <p style="text-align: center;">Si vous continuez la recette générée par l'IA ne prendra pas en compte vos allergènes</p>
         <div style="display: flex; justify-content: space-around; margin-top: 20px;">
           <button @click="proceedWithoutAllergens" class="confirm-btn">Continuer</button>
           <button @click="redirectToProfile" class="profile-btn">Modifier le profil</button>
@@ -217,6 +217,7 @@ export default {
       );
 
       if (response.data && response.data.title && response.data.ingredients && response.data.instructions) {
+        const allergensList = [...new Set(response.data.restrictionsList)];
         this.recipe = {
           title: response.data.title,
           ingredients: response.data.ingredients,
@@ -228,7 +229,7 @@ export default {
           people: response.data.people,
           type: response.data.type,
           image: response.data.image,
-          restrictionsList: response.data.restrictionsList,
+          restrictionsList: allergensList,
         };
       } else {
         throw new Error('Les données de la recette sont manquantes ou mal formatées.');
@@ -243,7 +244,10 @@ export default {
     async saveRecipe() {
       try {
         const requestData = {
-          recipe: this.recipe,
+          recipe: {
+            ...this.recipe,
+            restrictionsList: this.recipe.restrictionsList || []
+          },
           ingredients: this.recipe.ingredients.map((ingredient) => ({
             food_id: ingredient.food_id,
             quantity: ingredient.quantity,
@@ -418,8 +422,8 @@ button:hover {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
-  width: 80%;
-  max-width: 700px;
+  width: 100%;
+  max-width: 1000px;
   text-align: left;
 }
 .recipe-info-container {
@@ -461,9 +465,10 @@ button:hover {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
-  width: 80%;
-  max-width: 500px;
-  text-align: center;
+  width: 90%; /* Passe de 80% à 90% pour une largeur plus grande */
+  max-width: 700px; /* Augmenter la largeur maximale */
+  text-align: left;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
 }
 .confirm-btn {
   background-color: #4caf50;

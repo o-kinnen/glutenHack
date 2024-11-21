@@ -26,6 +26,9 @@
           <div class="recipe-info-line">
             <div class="info-item"><strong>Cuisine:</strong> {{ currentRecipe.cuisine_type }}</div>
             <div class="info-item"><strong>Type:</strong> {{ currentRecipe.category_type }}</div>
+            <div class="info-item">
+              <strong>Sans allergène :</strong> {{ currentRecipe.allergens_list?.join(', ') || 'Pas de mention' }}
+            </div>
           </div>
         </div>
         <h4>Ingrédients</h4>

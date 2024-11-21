@@ -30,6 +30,7 @@ const saveRecipe = async (recipeData) => {
       cuisine_type,
       number_of_person,
       category_type,
+      allergens_list,
       ingredients,
     } = recipeData;
   
@@ -38,8 +39,8 @@ const saveRecipe = async (recipeData) => {
       await client.query('BEGIN');
   
       const recipeQuery = `
-        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING recipe_id;
       `;
       const recipeValues = [
@@ -50,6 +51,7 @@ const saveRecipe = async (recipeData) => {
         cuisine_type,
         number_of_person,
         category_type,
+        allergens_list
       ];
       const recipeResult = await client.query(recipeQuery, recipeValues);
       const recipeId = recipeResult.rows[0].recipe_id;
@@ -91,6 +93,7 @@ const getAllRecipes = async () => {
         r.number_of_person,
         r.category_type,
         r.created_at,
+        r.allergens_list,
         json_agg(
           json_build_object(
             'food_id', ri.food_id,

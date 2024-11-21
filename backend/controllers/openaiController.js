@@ -100,6 +100,7 @@ const saveRecipe = async (req, res) => {
       cuisine_type: recipe.cuisine,
       number_of_person: recipe.people,
       category_type: recipe.type,
+      allergens_list: recipe.restrictionsList || [],
       ingredients,
     };
 

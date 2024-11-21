@@ -13,9 +13,7 @@
             <input type="number" v-model.number="quantities[item.food_id]" placeholder="Nouvelle quantité" class="quantity-input"/>
             <button @click="updateQuantity(item.food_id)" class="update-btn">Ajouter</button>
           </div>
-          <span v-else-if="item.quantity" class="non-modifiable">
-            (quantité non modifiable)
-          </span>
+          <span v-else-if="item.quantity" class="non-modifiable"></span>
           <button @click="deleteItem(item.food_name)" class="delete-btn">Supprimer</button>
         </div>
       </li>
@@ -40,7 +38,8 @@ export default {
           withCredentials: true,
         });
 
-        this.shoppingItems = response.data;
+        this.listId = response.data.listId;
+        this.shoppingItems = response.data.items;
 
         this.shoppingItems.forEach((item) => {
           if (this.isQuantityNumeric(item.quantity)) {
@@ -49,7 +48,11 @@ export default {
           }
         });
       } catch (error) {
+        if (error.response && error.response.status === 404) {
+          alert('Aucune liste des courses trouvée.');
+        } else {
         console.error('Erreur lors de la récupération de la liste des courses :', error);
+        }
       }
     },
 
@@ -77,13 +80,10 @@ export default {
       }
 
       try {
-        const listId = 8;
-        console.log('Données envoyées :', { listId, foodId, incrementValue: newQuantity });
-
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/shopping-list/update-quantity`,
           {
-            listId,
+            listId : this.listId,
             foodId,
             incrementValue: newQuantity,
           },

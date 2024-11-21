@@ -39,26 +39,57 @@ exports.addToShoppingList = async (req, res) => {
     }
 
     const ingredients = await db.query(
-      `SELECT DISTINCT f.food_id, f.food_name, ri.quantity
+      `SELECT ri.food_id, ri.quantity
        FROM recipes_ingredients ri
-       JOIN foods f ON ri.food_id = f.food_id
        WHERE ri.recipe_id = $1`,
       [recipeId]
     );
 
-    const promises = ingredients.rows.map((ingredient) =>
-      db.query(
-        `INSERT INTO shopping_list_items (list_id, food_id, quantity)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (list_id, food_id)
-         DO UPDATE SET quantity = EXCLUDED.quantity`,
-        [listId, ingredient.food_id, ingredient.quantity]
-      )
-    );
+    const promises = ingredients.rows.map(async (ingredient) => {
+      const quantity = ingredient.quantity ? ingredient.quantity.trim() : '';
+
+      const existingItem = await db.query(
+        `SELECT quantity FROM shopping_list_items WHERE list_id = $1 AND food_id = $2`,
+        [listId, ingredient.food_id]
+      );
+
+      if (existingItem.rows.length > 0) {
+        const existingQuantity = existingItem.rows[0].quantity;
+
+        if (!existingQuantity.match(/^\d+/)) {
+          return;
+        }
+
+        const existingMatch = existingQuantity.match(/^(\d+)\s*(.*)$/);
+        const newMatch = quantity.match(/^(\d+)\s*(.*)$/);
+
+        if (existingMatch && newMatch) {
+          const existingNumeric = parseInt(existingMatch[1], 10);
+          const existingUnit = existingMatch[2].trim();
+          const newNumeric = parseInt(newMatch[1], 10);
+          const newUnit = newMatch[2].trim();
+
+          if (existingUnit === newUnit) {
+            const updatedQuantity = `${existingNumeric + newNumeric} ${existingUnit}`;
+            console.log(`Mise à jour de ${ingredient.food_id}: ${updatedQuantity}`);
+            await db.query(
+              `UPDATE shopping_list_items SET quantity = $1 WHERE list_id = $2 AND food_id = $3`,
+              [updatedQuantity, listId, ingredient.food_id]
+            );
+          }
+        }
+      } else {
+        await db.query(
+          `INSERT INTO shopping_list_items (list_id, food_id, quantity)
+           VALUES ($1, $2, $3)`,
+          [listId, ingredient.food_id, quantity]
+        );
+      }
+    });
 
     await Promise.all(promises);
 
-    res.status(200).json({ message: 'Les aliments ont été ajoutés ou mis à jour dans la liste des courses.' });
+    res.status(200).json({ message: 'Les ingrédients ont été ajoutés ou mis à jour dans la liste des courses.' });
   } catch (error) {
     console.error("Erreur lors de l'ajout à la liste des courses :", error);
     res.status(500).json({ message: 'Erreur serveur.' });
@@ -79,15 +110,29 @@ exports.getShoppingList = async (req, res) => {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
 
+    const listResult = await db.query(
+      `SELECT list_id FROM shopping_list WHERE user_id = $1 LIMIT 1`,
+      [user.user_id]
+    );
+
+    if (listResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Aucune liste des courses trouvée pour cet utilisateur.' });
+    }
+
+    const listId = listResult.rows[0].list_id;
+
     const items = await db.query(
       `SELECT f.food_id, f.food_name, sli.quantity
        FROM shopping_list_items sli
        JOIN foods f ON sli.food_id = f.food_id
-       WHERE sli.list_id = (SELECT list_id FROM shopping_list WHERE user_id = $1 LIMIT 1)`,
-      [user.user_id]
+       WHERE sli.list_id = $1`,
+      [listId]
     );
 
-    res.status(200).json(items.rows);
+    res.status(200).json({
+      listId,
+      items: items.rows
+    });
   } catch (error) {
     console.error('Erreur lors de la récupération de la liste des courses :', error);
     res.status(500).json({ error: 'Erreur serveur.' });

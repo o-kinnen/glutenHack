@@ -2,9 +2,9 @@
   <div>
     <h1>Ma liste des courses</h1>
     <ul>
-      <li v-for="(food_name, index) in shoppingItems" :key="index">
-        {{ food_name }} 
-        <button @click="deleteItem(food_name)">Supprimer</button>
+      <li v-for="(item, index) in shoppingItems" :key="index">
+        {{ item.food_name }} : {{ item.quantity }}
+        <button @click="deleteItem(item.food_name)">Supprimer</button>
       </li>
     </ul>
   </div>
@@ -43,7 +43,7 @@ export default {
           }
         );
 
-        this.shoppingItems = this.shoppingItems.filter(item => item !== foodName);
+        this.shoppingItems = this.shoppingItems.filter(item => item.food_name !== foodName);
       } catch (error) {
         console.error('Erreur lors de la suppression de l\'aliment :', error);
       }

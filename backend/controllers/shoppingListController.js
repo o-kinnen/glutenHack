@@ -33,13 +33,13 @@ exports.addToShoppingList = async (req, res) => {
       const newList = await db.query(
         `INSERT INTO shopping_list (user_id, shopping_list_name, date_of_shopping)
          VALUES ($1, $2, CURRENT_TIMESTAMP) RETURNING list_id`,
-        [user.user_id, 'Liste principale']
+        [user.user_id, 'Liste test']
       );
       listId = newList.rows[0].list_id;
     };
 
     const ingredients = await db.query(
-      `SELECT DISTINCT f.food_id, f.food_name
+      `SELECT DISTINCT f.food_id, f.food_name, ri.quantity
        FROM recipes_ingredients ri
        JOIN foods f ON ri.food_id = f.food_id
        WHERE ri.recipe_id = $1`,
@@ -48,10 +48,11 @@ exports.addToShoppingList = async (req, res) => {
 
     const promises = ingredients.rows.map((ingredient) =>
         db.query(
-            `INSERT INTO shopping_list_items (list_id, food_id)
-            VALUES ($1, $2)
-            ON CONFLICT (list_id, food_id) DO NOTHING`,
-            [listId, ingredient.food_id]
+          `INSERT INTO shopping_list_items (list_id, food_id, quantity)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (list_id, food_id)
+          DO UPDATE SET quantity = EXCLUDED.quantity`,
+          [listId, ingredient.food_id, ingredient.quantity]
         )
     );
 
@@ -66,31 +67,31 @@ exports.addToShoppingList = async (req, res) => {
  
 exports.getShoppingList = async (req, res) => {
     try {
-        const token = req.cookies.token;
-        if (!token) {
-            return res.status(401).json({ message: 'Accès non autorisé. Aucun token fourni.' });
-        }
+      const token = req.cookies.token;
+      if (!token) {
+        return res.status(401).json({ message: 'Accès non autorisé. Aucun token fourni.' });
+      }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.user_id);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.user_id);
 
-        if (!user) {
+      if (!user) {
         return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-        }
+      }
 
-        const items = await db.query(
-            `SELECT DISTINCT f.food_name
-            FROM shopping_list_items sli
-            JOIN foods f ON sli.food_id = f.food_id
-            WHERE sli.list_id = (SELECT list_id FROM shopping_list WHERE user_id = $1 LIMIT 1)`,
-            [user.user_id]
-        );
+      const items = await db.query(
+        `SELECT f.food_name, sli.quantity
+        FROM shopping_list_items sli
+        JOIN foods f ON sli.food_id = f.food_id
+        WHERE sli.list_id = (SELECT list_id FROM shopping_list WHERE user_id = $1 LIMIT 1)`,
+        [user.user_id]
+      );
   
-        res.status(200).json(items.rows.map(item => item.food_name));
+      res.status(200).json(items.rows);
     } catch (error) {
     console.error('Erreur lors de la récupération de la liste des courses:', error);
     res.status(500).json({ error: 'Erreur serveur.' });
-    }
+  }
 };
 
 exports.deleteFromShoppingList = async (req, res) => {

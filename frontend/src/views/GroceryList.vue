@@ -11,7 +11,8 @@
         <div class="grocery-actions">
           <div v-if="item.quantity && isQuantityNumeric(item.quantity)" class="update-section">
             <input type="number" v-model.number="quantities[item.food_id]" placeholder="Nouvelle quantité" class="quantity-input"/>
-            <button @click="updateQuantity(item.food_id)" class="update-btn">Ajouter</button>
+            <button @click="updateQuantity(item.food_id, 'add')" class="update-btn">Ajouter</button>
+            <button @click="updateQuantity(item.food_id, 'subtract')" class="subtract-btn">Soustraire</button>
           </div>
           <span v-else-if="item.quantity" class="non-modifiable"></span>
           <button @click="deleteItem(item.food_name)" class="delete-btn">Supprimer</button>
@@ -72,27 +73,36 @@ export default {
       }
     },
 
-    async updateQuantity(foodId) {
+    async updateQuantity(foodId, action = 'add') {
       const newQuantity = this.quantities[foodId];
       if (newQuantity === undefined || newQuantity <= 0) {
         alert("Veuillez entrer une quantité valide.");
         return;
       }
 
+      const incrementValue = action === 'add' ? newQuantity : -newQuantity;
+
       try {
+        const updatedItem = this.shoppingItems.find((item) => item.food_id === foodId);
+        if (updatedItem) {
+          const currentQuantity = parseInt(updatedItem.quantity.match(/^(\d+)/)[1], 10);
+          if (action === 'subtract' && currentQuantity + incrementValue <= 0) {
+            alert("La quantité ne peut pas être égale à 0.");
+            return;
+          }
+        }
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/shopping-list/update-quantity`,
           {
             listId : this.listId,
             foodId,
-            incrementValue: newQuantity,
+            incrementValue,
           },
           {
             withCredentials: true,
           }
         );
 
-        const updatedItem = this.shoppingItems.find((item) => item.food_id === foodId);
         if (updatedItem) {
           updatedItem.quantity = response.data.newQuantity;
         }
@@ -196,5 +206,12 @@ button {
 .non-modifiable {
   font-style: italic;
   color: #6c757d;
+}
+.subtract-btn {
+  background-color: #ffc107;
+  color: white;
+}
+.subtract-btn:hover {
+  background-color: #e0a800;
 }
 </style>

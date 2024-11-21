@@ -71,7 +71,6 @@ exports.addToShoppingList = async (req, res) => {
 
           if (existingUnit === newUnit) {
             const updatedQuantity = `${existingNumeric + newNumeric} ${existingUnit}`;
-            console.log(`Mise à jour de ${ingredient.food_id}: ${updatedQuantity}`);
             await db.query(
               `UPDATE shopping_list_items SET quantity = $1 WHERE list_id = $2 AND food_id = $3`,
               [updatedQuantity, listId, ingredient.food_id]
@@ -177,7 +176,7 @@ exports.updateQuantity = async (req, res) => {
   try {
     const { listId, foodId, incrementValue } = req.body;
 
-    if (!listId || !foodId || !incrementValue) {
+    if (!listId || !foodId || incrementValue === undefined) {
       return res.status(400).json({ message: 'Données manquantes.' });
     }
 
@@ -199,7 +198,13 @@ exports.updateQuantity = async (req, res) => {
 
     const numericPart = parseInt(match[1], 10);
     const unitPart = match[2];
-    const newQuantity = `${numericPart + incrementValue}${unitPart}`;
+    const newNumeric = numericPart + incrementValue;
+
+    if (newNumeric <= 0) {
+      return res.status(400).json({ message: 'La quantité ne peut pas être égale à 0 ou inférieure.' });
+    }
+
+    const newQuantity = `${newNumeric}${unitPart}`;
 
     await db.query(
       `UPDATE shopping_list_items SET quantity = $1 WHERE list_id = $2 AND food_id = $3`,
@@ -212,5 +217,3 @@ exports.updateQuantity = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur.' });
   }
 };
-
-  

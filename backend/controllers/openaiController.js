@@ -1,4 +1,5 @@
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const userModel = require('../models/userModel');
 const recipeModel = require('../models/recipeModel');
 
@@ -81,6 +82,18 @@ const getRecipe = async (req, res) => {
 
 const saveRecipe = async (req, res) => {
   try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ message: 'Accès non autorisé. Aucun token fourni.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await userModel.findById(decoded.user_id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
     const { recipe} = req.body;
 
     if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
@@ -102,6 +115,7 @@ const saveRecipe = async (req, res) => {
       category_type: recipe.type,
       allergens_list: recipe.restrictionsList || [],
       ingredients,
+      user_id: user.user_id
     };
 
     const recipeId = await recipeModel.saveRecipe(recipeData);
@@ -112,7 +126,6 @@ const saveRecipe = async (req, res) => {
     return res.status(500).json({ error: 'Erreur lors de l\'enregistrement de la recette.' });
   }
 };
-
 
 module.exports = {
   getRecipe,

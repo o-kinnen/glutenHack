@@ -6,5 +6,6 @@ const authMiddleware = require('../middlewares/auth');
 
 router.post('/save', authMiddleware, openaiController.saveRecipe);
 router.get('/all', authMiddleware, recipeController.getAllRecipes);
+router.get('/user', authMiddleware, recipeController.getRecipesByUserId);
 
 module.exports = router;

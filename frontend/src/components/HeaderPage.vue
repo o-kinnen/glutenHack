@@ -12,16 +12,22 @@
               <router-link to="/login" class="nav-link">Se connecter</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
-              <router-link to="/search" class="nav-link">Recherche</router-link>
-            </li>
-            <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/recipe" class="nav-link">Générer une recette</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
-              <router-link to="/my-recipe" class="nav-link">Toutes les recettes</router-link>
+              <router-link to="/my-recipes" class="nav-link">Mes recettes</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/recipes" class="nav-link">Toutes les recettes</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/grocery" class="nav-link">Liste des courses</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/ingredients" class="nav-link">Mes ingrédients</router-link>
+            </li>
+            <li class="nav-item" v-if="isAuthenticated">
+              <router-link to="/analyse" class="nav-link">Analyse des aliments</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/planner" class="nav-link">Planification</router-link>

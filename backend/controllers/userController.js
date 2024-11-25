@@ -26,8 +26,8 @@ exports.signupUser = async (req, res, next) => {
     const token = jwt.sign({ user_id: newUser.user_id, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV,
-      sameSite: 'Strict',
+      secure: false,
+      sameSite: 'Lax',
       maxAge: 3600000,
     });
     res.status(201).json({ message: 'Utilisateur enregistré avec succès.' });
@@ -54,8 +54,8 @@ exports.loginUser = async (req, res, next) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      secure: 'false',
+      sameSite: 'Lax',
       maxAge: 3600000,
     });
 
@@ -69,19 +69,13 @@ exports.loginUser = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Erreur lors de la connexion de l’utilisateur :', error);
-    next(error);
+    res.status(500).json({ message: 'Erreur serveur. Veuillez réessayer plus tard.' });
   }
 };
 
 exports.profileUser = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
-    if (!token) {
-      return res.status(401).json({ message: 'Accès non autorisé.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.user_id);
+    const user = await User.findById(req.user.user_id);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
@@ -125,11 +119,12 @@ exports.updateUserPreferences = async (req, res, next) => {
   }
 };
 
-exports.checkAuth = async (req, res, next) => {
+exports.checkAuth = async (req, res) => {
   try {
-    res.status(200).json({ authenticated: true });
+    res.status(200).json({ authenticated: true, userId: req.user.user_id });
   } catch (error) {
-    next(error);
+    console.error('Erreur lors de la vérification de l\'authentification :', error);
+    res.status(500).json({ message: 'Erreur serveur. Veuillez réessayer plus tard.' });
   }
 };
 

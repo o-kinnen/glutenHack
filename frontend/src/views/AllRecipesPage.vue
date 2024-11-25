@@ -53,7 +53,7 @@
 <script>
 import axios from 'axios';
 export default {
-  name: 'MyRecipePage',
+  name: 'AllRecipesPage',
   data() {
     return {
       recipes: [],

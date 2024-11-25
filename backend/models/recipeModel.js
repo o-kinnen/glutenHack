@@ -32,6 +32,7 @@ const saveRecipe = async (recipeData) => {
       category_type,
       allergens_list,
       ingredients,
+      user_id
     } = recipeData;
   
     const client = await db.connect();
@@ -39,8 +40,8 @@ const saveRecipe = async (recipeData) => {
       await client.query('BEGIN');
   
       const recipeQuery = `
-        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list, user_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING recipe_id;
       `;
       const recipeValues = [
@@ -51,7 +52,8 @@ const saveRecipe = async (recipeData) => {
         cuisine_type,
         number_of_person,
         category_type,
-        allergens_list
+        allergens_list,
+        user_id
       ];
       const recipeResult = await client.query(recipeQuery, recipeValues);
       const recipeId = recipeResult.rows[0].recipe_id;
@@ -122,9 +124,55 @@ const getAllRecipes = async () => {
     client.release();
   }
 };
+
+const getRecipesByUserId = async (user_id) => {
+  const client = await db.connect();
+  try {
+    const query = `
+      SELECT
+        r.recipe_id,
+        r.recipe_name,
+        r.instructions,
+        r.preparation_time,
+        r.difficulty,
+        r.cuisine_type,
+        r.number_of_person,
+        r.category_type,
+        r.created_at,
+        r.allergens_list,
+        json_agg(
+          json_build_object(
+            'food_id', ri.food_id,
+            'food_name', f.food_name,
+            'quantity', ri.quantity
+          )
+        ) AS ingredients
+      FROM recipes r
+      LEFT JOIN recipes_ingredients ri ON r.recipe_id = ri.recipe_id
+      LEFT JOIN foods f ON ri.food_id = f.food_id
+      WHERE r.user_id = $1
+      GROUP BY r.recipe_id
+      ORDER BY r.created_at DESC;
+    `;
+  
+    const result = await client.query(query, [user_id]);
+  
+    if (result.rows.length === 0) {
+      return [];
+    }
+  
+    return result.rows;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des recettes pour cet utilisateur :', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
   
 module.exports = {
   saveRecipe,
   getOrCreateFoodId,
-  getAllRecipes
+  getAllRecipes,
+  getRecipesByUserId
 };

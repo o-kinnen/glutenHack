@@ -82,7 +82,40 @@ const User = {
         console.error("Erreur lors de la mise à jour des restrictions alimentaires :", error);
         throw new Error('Erreur lors de la mise à jour des restrictions.');
     }
-  }
+  },
+
+  addFoodToFridge : async (userId, foodName, quantity) => {
+    try {
+      const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
+
+      if (foodResult.rows.length === 0) {
+        throw new Error('Aliment non trouvé.');
+      }
+
+      const foodId = foodResult.rows[0].food_id;
+
+      await pool.query(
+        'INSERT INTO users_fridge (user_id, food_id, quantity) VALUES ($1, $2, $3)',
+        [userId, foodId, quantity]
+      );
+    } catch (error) {
+      throw error;
+    }
+  },
+  getFridgeContents: async (userId) => {
+    try {
+      const result = await pool.query(`
+        SELECT f.food_name, uf.quantity 
+        FROM users_fridge uf
+        JOIN foods f ON uf.food_id = f.food_id
+        WHERE uf.user_id = $1`, [userId]);
+  
+      return result.rows;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des aliments du réfrigérateur :', error);
+      throw error;
+    }
+  }  
 };
 
 module.exports = User;

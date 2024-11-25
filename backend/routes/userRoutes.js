@@ -15,5 +15,7 @@ router.post('/reset-password', userController.resetPassword);
 router.get('/verify-reset-token', userController.verifyResetToken);
 router.put('/update-preferences/:id', authMiddleware, userController.updateUserPreferences);
 router.get('/restrictions', authMiddleware, userController.getRestrictionsByUserId);
+router.get('/fridge', authMiddleware, userController.getFridgeContents);
+router.post('/fridge/add', authMiddleware, userController.addFoodToFridge);
 
 module.exports = router;

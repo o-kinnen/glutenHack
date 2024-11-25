@@ -245,3 +245,31 @@ exports.getRestrictionsByUserId = async (req, res) => {
     return res.status(500).json({ error: 'Erreur lors de la récupération des restrictions alimentaires.' });
   }
 };
+
+exports.addFoodToFridge = async (req, res) => {
+  const { foodName, quantity } = req.body;
+  const userId = req.user.user_id;
+
+  try {
+    await User.addFoodToFridge(userId, foodName, quantity);
+    res.status(200).json({ message: 'Aliment ajouté au réfrigérateur avec succès.' });
+  } catch (error) {
+    if (error.message === 'Aliment non trouvé.') {
+      res.status(404).json({ message: 'Aliment non trouvé.' });
+    } else {
+      console.error('Erreur lors de l\'ajout de l\'aliment au réfrigérateur :', error);
+      res.status(500).json({ message: 'Erreur lors de l\'ajout de l\'aliment.' });
+    }
+  }
+};
+
+exports.getFridgeContents = async (req, res) => {
+  const userId = req.user.user_id;
+  try {
+    const fridgeContents = await User.getFridgeContents(userId);
+    res.status(200).json(fridgeContents);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des aliments du réfrigérateur :', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des aliments du réfrigérateur.' });
+  }
+};

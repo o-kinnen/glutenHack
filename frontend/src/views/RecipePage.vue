@@ -1,8 +1,5 @@
 <template>
   <div class="recipe-page">
-    <div class="add-ingredients-container">
-      <AddIngredients @ingredients-updated="updateIngredientsList" />
-    </div>
     <button @click="fetchRecipe" class="search-recipes-btn">
       Rechercher des recettes avec l'IA
     </button>
@@ -129,13 +126,9 @@
   
 <script>
 import axios from 'axios';
-import AddIngredients from '@/components/AddIngredients.vue'
 
 export default {
   name: 'RecipePage',
-  components: {
-    AddIngredients
-  },
   data() {
     return {
       recipe: null,
@@ -441,11 +434,6 @@ button:hover {
   border-radius: 5px;
   flex: 1;
   text-align: center;
-}
-.add-ingredients-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 .modal-overlay {
   position: fixed;

@@ -273,3 +273,34 @@ exports.getFridgeContents = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des aliments du réfrigérateur.' });
   }
 };
+
+exports.removeFoodFromFridge = async (req, res) => {
+  const userId = req.user.user_id;
+  const { foodName } = req.query;
+
+  try {
+    await User.removeFoodFromFridge(userId, foodName);
+    res.status(200).json({ message: 'Aliment supprimé du réfrigérateur avec succès.' });
+  } catch (error) {
+    if (error.message === 'Aliment non trouvé.') {
+      res.status(404).json({ message: 'Aliment non trouvé.' });
+    } else {
+      console.error("Erreur lors de la suppression de l'aliment du réfrigérateur :", error);
+      res.status(500).json({ message: "Erreur lors de la suppression de l'aliment." });
+    }
+  }
+};
+
+exports.updateFoodQuantity = async (req, res) => {
+  const { foodName, quantity, unit } = req.body;
+  const userId = req.user.user_id;
+
+  try {
+    await User.updateFoodQuantity(userId, foodName, quantity, unit);
+    res.status(200).json({ message: 'Quantité de l\'aliment mise à jour avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la quantité de l\'aliment :', error);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour de la quantité de l\'aliment.' });
+  }
+};
+

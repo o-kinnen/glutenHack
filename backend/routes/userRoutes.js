@@ -17,5 +17,7 @@ router.put('/update-preferences/:id', authMiddleware, userController.updateUserP
 router.get('/restrictions', authMiddleware, userController.getRestrictionsByUserId);
 router.get('/fridge', authMiddleware, userController.getFridgeContents);
 router.post('/fridge/add', authMiddleware, userController.addFoodToFridge);
+router.delete('/fridge/delete', authMiddleware, userController.removeFoodFromFridge);
+router.put('/fridge/update', authMiddleware, userController.updateFoodQuantity);
 
 module.exports = router;

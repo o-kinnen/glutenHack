@@ -115,6 +115,49 @@ const User = {
       console.error('Erreur lors de la récupération des aliments du réfrigérateur :', error);
       throw error;
     }
+  },
+  removeFoodFromFridge: async (userId, foodName) => {
+    try {
+      const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
+  
+      if (foodResult.rows.length === 0) {
+        throw new Error('Aliment non trouvé.');
+      }
+  
+      const foodId = foodResult.rows[0].food_id;
+
+      const deleteResult = await pool.query(
+        'DELETE FROM users_fridge WHERE user_id = $1 AND food_id = $2 RETURNING *',
+        [userId, foodId]
+      );
+  
+      if (deleteResult.rows.length === 0) {
+        throw new Error('Aliment non trouvé dans le réfrigérateur de l\'utilisateur.');
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'aliment du réfrigérateur :", error);
+      throw error;
+    }
+  },
+  updateFoodQuantity: async (userId, foodName, quantity, unit) => {
+    try {
+      const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
+  
+      if (foodResult.rows.length === 0) {
+        throw new Error('Aliment non trouvé.');
+      }
+  
+      const foodId = foodResult.rows[0].food_id;
+      const quantityWithUnit = `${quantity} ${unit}`.trim();
+  
+      await pool.query(
+        'UPDATE users_fridge SET quantity = $1 WHERE user_id = $2 AND food_id = $3',
+        [quantityWithUnit, userId, foodId]
+      );
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de la quantité de l'aliment :", error);
+      throw error;
+    }
   }  
 };
 

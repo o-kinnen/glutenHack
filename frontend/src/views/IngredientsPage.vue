@@ -3,7 +3,7 @@
     <div class="add-ingredients">
       <h4>Ajouter des ingrédients :</h4>
       <div class="input-container">
-        <input v-model="newIngredient" placeholder="Entrez un ingrédient ou un code-barres" :disabled="isLoading"/>
+        <input v-model="newIngredient" placeholder="Entrez un ingrédient" :disabled="isLoading" />
         <input v-model="newQuantity" type="number" min="1" placeholder="Quantité" :disabled="isLoading"/>
         <select v-model="newUnit" :disabled="isLoading">
           <option value="">Unités (optionnel)</option>
@@ -14,10 +14,33 @@
         </select>
         <button @click="addIngredient" :disabled="isLoading">Ajouter</button>
       </div>
+      <div class="search-container">
+        <input v-model="searchIngredient" placeholder="Rechercher un ingrédient" />
+        <button @click="sortIngredientsByCategory" class="sort-button">Trier par catégorie</button>
+      </div>
       <div v-if="isLoading" class="loading-spinner">Chargement...</div>
-      <ul class="ingredient-list">
-        <li v-for="(ingredient, index) in ingredients" :key="index">
-          <div class="ingredient-item">
+      <div v-if="sortByCategory" class="ingredient-list">
+        <div v-for="(categoryGroup, category) in categorizedIngredients" :key="category" class="category-group">
+          <h5 class="category-title">{{ category }}</h5>
+          <ul>
+            <li v-for="(ingredient, index) in categoryGroup" :key="index" class="ingredient-item">
+              <div class="ingredient-info">
+                <strong>{{ ingredient.name }}</strong>
+                <div class="ingredient-quantity">{{ ingredient.quantity }}</div>
+              </div>
+              <div class="ingredient-actions">
+                <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" />
+                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="add-button">Ajouter</button>
+                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="subtract-button">Soustraire</button>
+                <button @click="removeIngredient(index, ingredient.name)" class="remove-button">Supprimer</button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div v-else class="ingredient-list">
+        <ul>
+          <li v-for="(ingredient, index) in filteredIngredients" :key="index" class="ingredient-item">
             <div class="ingredient-info">
               <strong>{{ ingredient.name }}</strong>
               <div class="ingredient-quantity">{{ ingredient.quantity }}</div>
@@ -28,9 +51,9 @@
               <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="subtract-button">Soustraire</button>
               <button @click="removeIngredient(index, ingredient.name)" class="remove-button">Supprimer</button>
             </div>
-          </div>
-        </li>
-      </ul>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
@@ -45,9 +68,34 @@ export default {
       newIngredient: "",
       newQuantity: "",
       newUnit: "",
+      searchIngredient: "",
       ingredients: [],
-      isLoading: false
+      isLoading: false,
+      sortByCategory: false
     };
+  },
+  computed: {
+    filteredIngredients() {
+      let filtered = this.ingredients;
+
+      if (this.searchIngredient.trim() !== "") {
+        filtered = filtered.filter(ingredient =>
+          ingredient.name.toLowerCase().includes(this.searchIngredient.trim().toLowerCase())
+        );
+      }
+
+      return filtered;
+    },
+    categorizedIngredients() {
+      const categorized = {};
+      this.filteredIngredients.forEach(ingredient => {
+        if (!categorized[ingredient.category]) {
+          categorized[ingredient.category] = [];
+        }
+        categorized[ingredient.category].push(ingredient);
+      });
+      return categorized;
+    }
   },
   created() {
     this.fetchIngredientsFromFridge();
@@ -62,6 +110,7 @@ export default {
         this.ingredients = response.data.map(item => ({
           name: item.food_name,
           quantity: item.quantity,
+          category: item.category || "autres",
           updateQuantity: 0
         }));
       } catch (error) {
@@ -142,7 +191,7 @@ export default {
           try {
             const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/add`, {
               foodName: ingredientName,
-              quantity: `${this.newQuantity || 1} ${this.newUnit}`.trim()
+              quantity: `${this.newQuantity || 1} ${this.newUnit}`.trim(),
             }, {
               withCredentials: true
             });
@@ -151,12 +200,12 @@ export default {
               throw new Error("Erreur lors de l'ajout de l'aliment dans le réfrigérateur de l'utilisateur.");
             }
 
-            this.ingredients.push({ name: ingredientName, quantity: `${this.newQuantity || 1} ${this.newUnit}`.trim(), updateQuantity: 0 });
+            await this.fetchIngredientsFromFridge();
           } catch (error) {
             if (error.response && error.response.status === 404) {
               alert("L'aliment n'est pas encore dans la base de données.");
             } else {
-              console.error('Erreur lors de l\'ajout de l\'aliment :', error);
+              console.error("Erreur lors de l'ajout de l'aliment :", error);
             }
           }
         }
@@ -229,6 +278,9 @@ export default {
       } catch (error) {
         console.error("Erreur lors de la suppression de l'aliment :", error);
       }
+    },
+    sortIngredientsByCategory() {
+      this.sortByCategory = !this.sortByCategory;
     }
   }
 };
@@ -243,9 +295,24 @@ export default {
   display: flex;
   gap: 10px;
 }
+.search-container {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
 .ingredient-list {
   list-style-type: none;
   padding: 0;
+}
+.category-group {
+  margin-top: 20px;
+}
+.category-title {
+  background-color: gray;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
 }
 .ingredient-item {
   display: flex;
@@ -291,6 +358,14 @@ export default {
   border-radius: 3px;
   cursor: pointer;
 }
+.sort-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
 .loading-spinner {
   margin-top: 10px;
   font-size: 16px;
@@ -308,3 +383,4 @@ button:disabled {
   align-items: center;
 }
 </style>
+

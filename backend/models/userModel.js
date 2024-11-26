@@ -105,7 +105,7 @@ const User = {
   getFridgeContents: async (userId) => {
     try {
       const result = await pool.query(`
-        SELECT f.food_name, uf.quantity 
+        SELECT f.food_name, uf.quantity, f.category
         FROM users_fridge uf
         JOIN foods f ON uf.food_id = f.food_id
         WHERE uf.user_id = $1`, [userId]);

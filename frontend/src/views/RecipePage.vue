@@ -64,6 +64,11 @@
           </ul>
         </div>
       </div>
+      <div>
+        <button @click="toggleStockOption" class="dropdown-btn">
+          Inclure les ingrédients en stock : {{ includeStock ? 'Oui' : 'Non' }}
+        </button>
+      </div>
     </div>
     <div v-if="isLoading" class="loading-spinner">
       Recherche en cours ...
@@ -140,6 +145,7 @@ export default {
       showCuisineDropdown: false,
       showPeopleDropdown: false,
       showTypeDropdown: false,
+      includeStock: false,
       selectedTime: 'Rapide',
       selectedDifficulty: 'Facile',
       selectedCuisine: 'Européenne',
@@ -158,6 +164,9 @@ export default {
       availableIngredients: []
     };
   },
+  mounted() {
+    this.fetchAvailableIngredients();
+  },
   methods: {
     async getUserRestrictions() {
       try {
@@ -170,6 +179,21 @@ export default {
         console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
         alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
         return [];
+      }
+    },
+    async fetchAvailableIngredients() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/fridge`, {
+          withCredentials: true
+        });
+        if (Array.isArray(response.data)) {
+          this.availableIngredients = response.data;
+        } else {
+          console.error('Les données reçues ne sont pas valides :', response.data);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des ingrédients en stock :', error);
+        alert('Impossible de récupérer les ingrédients en stock. Veuillez réessayer.');
       }
     },
     async fetchRecipe() {
@@ -195,7 +219,7 @@ export default {
         cuisine: this.selectedCuisine,
         people: this.selectedPeople,
         type: this.selectedType,
-        availableIngredients: this.availableIngredients,
+        availableIngredients: this.includeStock ? this.availableIngredients : [],
       };
 
       const response = await axios.post(
@@ -305,6 +329,9 @@ export default {
     selectType(option) {
       this.selectedType = option;
       this.showTypeDropdown = false;
+    },
+    toggleStockOption() {
+      this.includeStock = !this.includeStock;
     },
     proceedWithoutAllergens() {
       this.showAllergenAlert = false;
@@ -480,4 +507,17 @@ button:hover {
 .profile-btn:hover {
   background-color: #0b7dda;
 }
+.dropdown-btn {
+  padding: 10px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.dropdown-btn:hover {
+  background-color: #555;
+}
+
 </style>

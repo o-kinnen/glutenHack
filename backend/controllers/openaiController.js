@@ -10,19 +10,20 @@ const getRecipe = async (req, res) => {
 
     const restrictionsList = await userModel.getRestrictionsByUserId(userId);
 
-    let content = `Donne-moi une recette ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui répond au critère suivants :
+    let content = `Donne-moi une recette en français ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui répond au critère suivants :
     Temps de préparation : ${time}. Difficulté : ${difficulty}. Cuisine : ${cuisine}. Nombre de personnes : ${people}. Type de repas : ${type}.`;
 
     if (availableIngredients && availableIngredients.length > 0) {
-      const stockIngredients = availableIngredients.join(', ');
-      content += ` Que les ingrédients suivants soit obligatoirement utilisés si mes restrictions le permettent : ${stockIngredients}.`;
+      const stockIngredients = availableIngredients
+        .map(ingredient => `${ingredient.food_name} (${ingredient.quantity})`)
+        .join(', ');
+      content += ` Il faut qu'un maximum des ingrédients suivants soient utilisés : ${stockIngredients}.`;
     }
 
     content += ` Le format de la réponse doit être en JSON valide avec les clés suivantes :
     "restrictionsList" dont la valeur est égale à une liste contenant les éléments suivants ${restrictionsList},
-    la variable "image" qui doit être une photo de la recette que tu vas générer,
-    "title", "ingredients", "quantity" et "instructions". La clé "ingredients" doit être une liste d'ingrédients (les aliments) 
-    au singulier en minuscules, la clé "quantity" est la quantité pour chaque ingrédient et la clé "instructions" doit être une liste d'étapes.`;
+    "title", "ingredients", "quantity" et "instructions". La clé "ingredients" doit être une liste d'ingrédients dont les noms des aliments doivent être
+    au singulier en minuscule, la clé "quantity" est la quantité pour chaque ingrédient et la clé "instructions" doit être une liste d'étapes.`;
 
     console.log(content);
 

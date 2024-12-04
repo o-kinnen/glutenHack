@@ -63,7 +63,8 @@ const getRecipe = async (req, res) => {
             people: people,
             type: type,
             image: recipeData.image,
-            restrictionsList: recipeData.restrictionsList
+            restrictionsList: recipeData.restrictionsList,
+            created_by_ai: true
           });
         } else {
           return res.status(500).json({ error: 'Les données de la recette sont manquantes ou mal formatées.' });
@@ -101,6 +102,8 @@ const saveRecipe = async (req, res) => {
       return res.status(400).json({ error: 'La recette doit contenir des ingrédients.' });
     }
 
+    const isPublic = recipe.public !== undefined ? recipe.public : true;
+
     const ingredients = recipe.ingredients.map((ingredient, index) => ({
       name: ingredient,
       quantity: recipe.quantity[index] || 'N/A'
@@ -116,7 +119,9 @@ const saveRecipe = async (req, res) => {
       category_type: recipe.type,
       allergens_list: recipe.restrictionsList || [],
       ingredients,
-      user_id: user.user_id
+      user_id: user.user_id,
+      created_by_ai: true,
+      public: isPublic
     };
 
     const recipeId = await recipeModel.saveRecipe(recipeData);

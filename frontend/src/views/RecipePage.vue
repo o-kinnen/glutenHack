@@ -87,6 +87,7 @@
         <h3 style="text-align: center;">{{ recipe.title }}</h3>
         <div class="recipe-info-container">
           <div class="recipe-info-line">
+          <div class="info-item"><strong>Généré par l'IA :</strong> {{ recipe.created_by_ai ? 'Oui' : 'Non' }}</div>
           <div class="info-item"><strong>Temps de préparation:</strong> {{ recipe.time }}</div>
           <div class="info-item"><strong>Difficulté:</strong> {{ recipe.difficulty }}</div>
           <div class="info-item"><strong>Nombre de personnes:</strong> {{ recipe.people }}</div>
@@ -111,7 +112,10 @@
             {{ instruction }}
           </li>
         </ol>
-        <button @click="saveRecipe" v-if="recipe">Valider la recette</button>
+        <div style="margin-top: 15px; text-align: center;">
+          <label><input type="checkbox" v-model="recipe.public" />Rendre cette recette publique</label>
+        </div>
+        <button @click="saveRecipe" v-if="recipe" :disabled="isSaving || isSaved">{{ isSaved ? 'Déjà enregistré' : isSaving ? 'Enregistrement...' : 'Valider la recette' }}</button>
         <button @click="closeModal">Fermer</button>
       </div>
     </modal>
@@ -156,7 +160,9 @@ export default {
       showPeopleDropdown: false,
       showTypeDropdown: false,
       includeStock: false,
-      showStockModal: false, // Pour contrôler l'affichage du modal
+      showStockModal: false,
+      isSaving: false,
+      isSaved: false,
       selectedTime: 'Rapide',
       selectedDifficulty: 'Facile',
       selectedCuisine: 'Européenne',
@@ -172,6 +178,7 @@ export default {
       cuisine: '',
       people: '',
       type: '',
+      public: true,
       availableIngredients: []
     };
   },
@@ -209,18 +216,18 @@ export default {
     },
     toggleStockOption() {
       if (this.availableIngredients.length === 0) {
-        this.showStockModal = true; // Affiche le modal
+        this.showStockModal = true;
       } else {
-        this.includeStock = !this.includeStock; // Active/Désactive le bouton normalement
+        this.includeStock = !this.includeStock;
       }
     },
     handleStockModalResponse(response) {
       if (response === 'add') {
-        this.$router.push('/ingredients'); // Redirige l'utilisateur
+        this.$router.push('/ingredients');
       } else if (response === 'cancel') {
-        this.includeStock = false; // Désactive le bouton si l'utilisateur annule
+        this.includeStock = false;
       }
-      this.showStockModal = false; // Ferme le modal
+      this.showStockModal = false;
     },
     async fetchRecipe() {
       try {
@@ -245,7 +252,7 @@ export default {
           cuisine: this.selectedCuisine,
           people: this.selectedPeople,
           type: this.selectedType,
-          availableIngredients: this.includeStock ? this.availableIngredients : [],
+          availableIngredients: this.includeStock ? this.availableIngredients : []
         };
 
         const response = await axios.post(
@@ -273,6 +280,8 @@ export default {
             type: response.data.type,
             image: response.data.image,
             restrictionsList: allergensList,
+            created_by_ai: response.data.created_by_ai,
+            public: true
           };
         } else {
           throw new Error('Les données de la recette sont manquantes ou mal formatées.');
@@ -285,11 +294,16 @@ export default {
       }
     },
     async saveRecipe() {
+      if (this.isSaving || this.isSaved) {
+        return;
+      }
+      this.isSaving = true;
       try {
         const requestData = {
           recipe: {
             ...this.recipe,
-            restrictionsList: this.recipe.restrictionsList || []
+            restrictionsList: this.recipe.restrictionsList || [],
+            public: this.recipe.public
           },
           ingredients: this.recipe.ingredients.map((ingredient) => ({
             food_id: ingredient.food_id,
@@ -307,9 +321,12 @@ export default {
         }
         );
         alert('Recette enregistrée avec succès !');
+        this.isSaved = true;
       } catch (error) {
-      console.error('Erreur lors de l\'enregistrement de la recette :', error);
-      alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
+        console.error('Erreur lors de l\'enregistrement de la recette :', error);
+        alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
+      } finally {
+        this.isSaving = false;
       }
     },
     updateIngredientsList(ingredients) {
@@ -503,8 +520,8 @@ button:hover {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
-  width: 90%; /* Passe de 80% à 90% pour une largeur plus grande */
-  max-width: 700px; /* Augmenter la largeur maximale */
+  width: 90%;
+  max-width: 700px;
   text-align: left;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
 }
@@ -545,20 +562,6 @@ button:hover {
   background-color: #888;
   cursor: not-allowed;
 }
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  width: 90%;
-  max-width: 400px;
-  margin: auto;
-}
-.modal-actions {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 20px;
-}
 .confirm-btn {
   background-color: #4caf50;
   color: white;
@@ -580,5 +583,13 @@ button:hover {
 }
 .cancel-btn:hover {
   background-color: #d32f2f;
+}
+button:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+button:disabled:hover {
+  background-color: #ccc;
 }
 </style>

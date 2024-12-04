@@ -32,7 +32,9 @@ const saveRecipe = async (recipeData) => {
       category_type,
       allergens_list,
       ingredients,
-      user_id
+      user_id,
+      created_by_ai,
+      public
     } = recipeData;
   
     const client = await db.connect();
@@ -40,8 +42,8 @@ const saveRecipe = async (recipeData) => {
       await client.query('BEGIN');
   
       const recipeQuery = `
-        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list, user_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list, user_id, created_by_ai, public)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING recipe_id;
       `;
       const recipeValues = [
@@ -53,7 +55,9 @@ const saveRecipe = async (recipeData) => {
         number_of_person,
         category_type,
         allergens_list,
-        user_id
+        user_id,
+        created_by_ai,
+        public
       ];
       const recipeResult = await client.query(recipeQuery, recipeValues);
       const recipeId = recipeResult.rows[0].recipe_id;
@@ -96,6 +100,8 @@ const getAllRecipes = async () => {
         r.category_type,
         r.created_at,
         r.allergens_list,
+        r.created_by_ai,
+        r.public,
         json_agg(
           json_build_object(
             'food_id', ri.food_id,
@@ -106,6 +112,7 @@ const getAllRecipes = async () => {
       FROM recipes r
       LEFT JOIN recipes_ingredients ri ON r.recipe_id = ri.recipe_id
       LEFT JOIN foods f ON ri.food_id = f.food_id
+      WHERE r.public = true
       GROUP BY r.recipe_id
       ORDER BY r.created_at DESC;
     `;
@@ -140,6 +147,8 @@ const getRecipesByUserId = async (user_id) => {
         r.category_type,
         r.created_at,
         r.allergens_list,
+        r.created_by_ai,
+        r.public,
         json_agg(
           json_build_object(
             'food_id', ri.food_id,

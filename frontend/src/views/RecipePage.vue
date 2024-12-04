@@ -126,6 +126,16 @@
         </div>
       </div>
     </modal>
+    <modal v-if="showStockModal" @close="showStockModal = false">
+      <div class="modal-content">
+        <h3>Votre liste d’ingrédients en stock est vide</h3>
+        <p>Voulez-vous ajouter des ingrédients en stock ? Vous serez redirigé vers la page des ingrédients.</p>
+        <div class="modal-actions">
+          <button @click="handleStockModalResponse('add')" class="confirm-btn">Ajouter des ingrédients</button>
+          <button @click="handleStockModalResponse('cancel')" class="cancel-btn">Annuler</button>
+        </div>
+      </div>
+    </modal>
   </div>
 </template>
   
@@ -146,6 +156,7 @@ export default {
       showPeopleDropdown: false,
       showTypeDropdown: false,
       includeStock: false,
+      showStockModal: false, // Pour contrôler l'affichage du modal
       selectedTime: 'Rapide',
       selectedDifficulty: 'Facile',
       selectedCuisine: 'Européenne',
@@ -196,6 +207,21 @@ export default {
         alert('Impossible de récupérer les ingrédients en stock. Veuillez réessayer.');
       }
     },
+    toggleStockOption() {
+      if (this.availableIngredients.length === 0) {
+        this.showStockModal = true; // Affiche le modal
+      } else {
+        this.includeStock = !this.includeStock; // Active/Désactive le bouton normalement
+      }
+    },
+    handleStockModalResponse(response) {
+      if (response === 'add') {
+        this.$router.push('/ingredients'); // Redirige l'utilisateur
+      } else if (response === 'cancel') {
+        this.includeStock = false; // Désactive le bouton si l'utilisateur annule
+      }
+      this.showStockModal = false; // Ferme le modal
+    },
     async fetchRecipe() {
       try {
         const restrictions = await this.getUserRestrictions();
@@ -210,54 +236,54 @@ export default {
         alert('Une erreur est survenue. Veuillez réessayer.');
       }
     },
-  async executeRecipeLogic() {
-    this.isLoading = true;
-    try {
-      const requestData = {
-        time: this.selectedTime,
-        difficulty: this.selectedDifficulty,
-        cuisine: this.selectedCuisine,
-        people: this.selectedPeople,
-        type: this.selectedType,
-        availableIngredients: this.includeStock ? this.availableIngredients : [],
-      };
-
-      const response = await axios.post(
-        `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`,
-        requestData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-        }
-      );
-
-      if (response.data && response.data.title && response.data.ingredients && response.data.instructions) {
-        const allergensList = [...new Set(response.data.restrictionsList)];
-        this.recipe = {
-          title: response.data.title,
-          ingredients: response.data.ingredients,
-          instructions: response.data.instructions,
-          quantity: response.data.quantity,
-          time: response.data.time,
-          difficulty: response.data.difficulty,
-          cuisine: response.data.cuisine,
-          people: response.data.people,
-          type: response.data.type,
-          image: response.data.image,
-          restrictionsList: allergensList,
+    async executeRecipeLogic() {
+      this.isLoading = true;
+      try {
+        const requestData = {
+          time: this.selectedTime,
+          difficulty: this.selectedDifficulty,
+          cuisine: this.selectedCuisine,
+          people: this.selectedPeople,
+          type: this.selectedType,
+          availableIngredients: this.includeStock ? this.availableIngredients : [],
         };
-      } else {
-        throw new Error('Les données de la recette sont manquantes ou mal formatées.');
+
+        const response = await axios.post(
+          `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`,
+          requestData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            withCredentials: true,
+          }
+        );
+
+        if (response.data && response.data.title && response.data.ingredients && response.data.instructions) {
+          const allergensList = [...new Set(response.data.restrictionsList)];
+          this.recipe = {
+            title: response.data.title,
+            ingredients: response.data.ingredients,
+            instructions: response.data.instructions,
+            quantity: response.data.quantity,
+            time: response.data.time,
+            difficulty: response.data.difficulty,
+            cuisine: response.data.cuisine,
+            people: response.data.people,
+            type: response.data.type,
+            image: response.data.image,
+            restrictionsList: allergensList,
+          };
+        } else {
+          throw new Error('Les données de la recette sont manquantes ou mal formatées.');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la recherche de la recette :', error);
+        alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
+      } finally {
+        this.isLoading = false;
       }
-    } catch (error) {
-      console.error('Erreur lors de la recherche de la recette :', error);
-      alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
-    } finally {
-      this.isLoading = false;
-    }
-  },
+    },
     async saveRecipe() {
       try {
         const requestData = {
@@ -329,9 +355,6 @@ export default {
     selectType(option) {
       this.selectedType = option;
       this.showTypeDropdown = false;
-    },
-    toggleStockOption() {
-      this.includeStock = !this.includeStock;
     },
     proceedWithoutAllergens() {
       this.showAllergenAlert = false;
@@ -515,9 +538,47 @@ button:hover {
   border-radius: 5px;
   cursor: pointer;
 }
-
 .dropdown-btn:hover {
   background-color: #555;
 }
-
+.dropdown-btn[disabled] {
+  background-color: #888;
+  cursor: not-allowed;
+}
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  margin: auto;
+}
+.modal-actions {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+.confirm-btn {
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.confirm-btn:hover {
+  background-color: #45a049;
+}
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.cancel-btn:hover {
+  background-color: #d32f2f;
+}
 </style>

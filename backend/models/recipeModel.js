@@ -34,7 +34,8 @@ const saveRecipe = async (recipeData) => {
       ingredients,
       user_id,
       created_by_ai,
-      public
+      public,
+      image_url
     } = recipeData;
   
     const client = await db.connect();
@@ -42,8 +43,8 @@ const saveRecipe = async (recipeData) => {
       await client.query('BEGIN');
   
       const recipeQuery = `
-        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list, user_id, created_by_ai, public)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list, user_id, created_by_ai, public, image_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING recipe_id;
       `;
       const recipeValues = [
@@ -57,7 +58,8 @@ const saveRecipe = async (recipeData) => {
         allergens_list,
         user_id,
         created_by_ai,
-        public
+        public,
+        image_url
       ];
       const recipeResult = await client.query(recipeQuery, recipeValues);
       const recipeId = recipeResult.rows[0].recipe_id;

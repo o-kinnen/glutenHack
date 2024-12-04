@@ -77,6 +77,7 @@
       <div class="recipe-card" style="width: 80vw; max-width: 70%;">
         <div class="recipe-info">
           <h3>{{ recipe.title }}</h3>
+          <img :src="recipe.image" alt="Image de la recette" v-if="recipe.image" class="recipe-image" />
           <img>
           <button @click="openModal">Voir les détails</button>
         </div>
@@ -85,6 +86,7 @@
     <modal v-if="showModal" @close="closeModal" class="modal-overlay">
       <div class="modal-content">
         <h3 style="text-align: center;">{{ recipe.title }}</h3>
+        <img :src="recipe.image" alt="Image de la recette" v-if="recipe.image" class="modal-recipe-image" />
         <div class="recipe-info-container">
           <div class="recipe-info-line">
           <div class="info-item"><strong>Généré par l'IA :</strong> {{ recipe.created_by_ai ? 'Oui' : 'Non' }}</div>
@@ -591,5 +593,21 @@ button:disabled {
 }
 button:disabled:hover {
   background-color: #ccc;
+}
+.recipe-image {
+  width: 100%;
+  max-width: 200px; /* Limitez la largeur maximale de l'image */
+  height: auto;
+  border-radius: 10px;
+  margin-top: 10px;
+  object-fit: cover; /* Permet de recadrer l'image pour remplir son conteneur sans déformer le ratio */
+}
+.modal-recipe-image {
+  width: 100%;
+  max-width: 400px; /* Limitez la largeur maximale pour ne pas avoir une image trop grande dans le modal */
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  object-fit: contain; /* Permet d'ajuster l'image à l'intérieur du conteneur sans la couper */
 }
 </style>

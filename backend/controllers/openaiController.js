@@ -47,11 +47,16 @@ const getRecipe = async (req, res) => {
       }
     );
 
+    console.log('Réponse API OpenAI:', JSON.stringify(response.data, null, 2));
+
+
     if (response.data && response.data.choices && response.data.choices.length > 0) {
       try {
         const recipeData = JSON.parse(response.data.choices[0].message.content);
         
         if (recipeData && recipeData.title && recipeData.ingredients && recipeData.instructions) {
+          const imageUrl = await generateRecipeImage(recipeData.title);
+          recipeData.image = imageUrl;
           return res.status(200).json({
             title: recipeData.title,
             ingredients: recipeData.ingredients,
@@ -79,6 +84,35 @@ const getRecipe = async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de l\'appel à OpenAI :', error);
     return res.status(500).json({ error: 'Erreur lors de la recherche de la recette' });
+  }
+};
+
+const generateRecipeImage = async (recipeTitle) => {
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/images/generations',
+      {
+        prompt: `Une belle image du plat ${recipeTitle}`,
+        n: 1,
+        size: '1024x1024',
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+      }
+    );
+
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      console.log('URL de l\'image générée:', response.data.data[0].url);
+      return response.data.data[0].url;
+    } else {
+      throw new Error('Erreur lors de la génération de l\'image : aucune donnée renvoyée.');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la génération de l\'image :', error);
+    throw error;
   }
 };
 
@@ -121,7 +155,8 @@ const saveRecipe = async (req, res) => {
       ingredients,
       user_id: user.user_id,
       created_by_ai: true,
-      public: isPublic
+      public: isPublic,
+      image_url: recipe.image
     };
 
     const recipeId = await recipeModel.saveRecipe(recipeData);

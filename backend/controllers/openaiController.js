@@ -130,33 +130,73 @@ const saveRecipe = async (req, res) => {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
 
-    const { recipe} = req.body;
+    const isGeneratedByAI = req.body.recipe ? req.body.recipe.created_by_ai : req.body.created_by_ai === 'true';
 
-    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
-      return res.status(400).json({ error: 'La recette doit contenir des ingrédients.' });
+    let recipe;
+    if (isGeneratedByAI) {
+      recipe = req.body.recipe;
+    } else {
+      recipe = req.body;
     }
 
-    const isPublic = recipe.public !== undefined ? recipe.public : true;
+    const {
+      title,
+      time,
+      difficulty,
+      people,
+      cuisine,
+      type,
+      public: isPublic,
+      restrictionsList,
+      ingredients,
+      instructions,
+      quantity,
+    } = recipe;
 
-    const ingredients = recipe.ingredients.map((ingredient, index) => ({
-      name: ingredient,
-      quantity: recipe.quantity[index] || 'N/A'
-    }));
+    let parsedIngredients = [];
+    let parsedInstructions = [];
+    let parsedRestrictions = [];
+
+    if (!isGeneratedByAI) {
+      try {
+        parsedIngredients = JSON.parse(ingredients);
+        parsedInstructions = JSON.parse(instructions);
+        parsedRestrictions = JSON.parse(restrictionsList);
+      } catch (err) {
+        console.error('Erreur de parsing des valeurs JSON :', err);
+        return res.status(400).json({ error: 'Erreur de parsing des valeurs JSON' });
+      }
+    } else {
+      parsedIngredients = ingredients.map((ingredient, index) => ({
+        name: ingredient,
+        quantity: quantity[index] || 'N/A',
+      }));
+      parsedInstructions = instructions;
+      parsedRestrictions = restrictionsList || [];
+    }
+
+    if (!title || !time || !difficulty || !people || !cuisine || !type || parsedIngredients.length === 0 || parsedInstructions.length === 0) {
+      return res.status(400).json({ error: 'Tous les champs obligatoires doivent être remplis.' });
+    }
+
+    const isRecipePublic = isPublic === true || isPublic === 'true';
+
+    const instructionsString = parsedInstructions.map((inst) => inst.step ? inst.step : inst).join('\n');
 
     const recipeData = {
-      recipe_name: recipe.title,
-      instructions: recipe.instructions.join('\n'),
-      preparation_time: recipe.time,
-      difficulty: recipe.difficulty,
-      cuisine_type: recipe.cuisine,
-      number_of_person: recipe.people,
-      category_type: recipe.type,
-      allergens_list: recipe.restrictionsList || [],
-      ingredients,
+      recipe_name: title,
+      instructions: instructionsString,
+      preparation_time: time,
+      difficulty: difficulty,
+      cuisine_type: cuisine,
+      number_of_person: parseInt(people),
+      category_type: type,
+      allergens_list: parsedRestrictions,
+      ingredients: parsedIngredients,
       user_id: user.user_id,
-      created_by_ai: true,
-      public: isPublic,
-      image_url: recipe.image
+      created_by_ai: isGeneratedByAI,
+      public: isRecipePublic,
+      image_url: req.file ? req.file.path : recipe.image || null
     };
 
     const recipeId = await recipeModel.saveRecipe(recipeData);

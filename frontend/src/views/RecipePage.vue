@@ -3,6 +3,14 @@
     <button @click="fetchRecipe" class="search-recipes-btn">
       Rechercher des recettes avec l'IA
     </button>
+    <button @click="openEditRecipe" class="create-recipe-btn">
+      Créer une recette manuellement
+    </button>
+    <EditRecipe
+      :isVisible="showEditRecipe"
+      @close="closeEditRecipe"
+      @create-recipe="handleEditRecipe"
+    />
     <div class="filter-buttons">
       <div>
         <button @click="toggleTimeDropdown" class="dropdown-btn">
@@ -146,10 +154,14 @@
 </template>
   
 <script>
+import EditRecipe from '@/components/EditRecipe.vue';
 import axios from 'axios';
 
 export default {
   name: 'RecipePage',
+  components: {
+    EditRecipe,
+  },
   data() {
     return {
       recipe: null,
@@ -163,6 +175,7 @@ export default {
       showTypeDropdown: false,
       includeStock: false,
       showStockModal: false,
+      showEditRecipe: false,
       isSaving: false,
       isSaved: false,
       selectedTime: 'Rapide',
@@ -188,6 +201,49 @@ export default {
     this.fetchAvailableIngredients();
   },
   methods: {
+    openEditRecipe() {
+      this.showEditRecipe = true;
+    },
+    closeEditRecipe() {
+      this.showEditRecipe = false;
+    },
+    async handleEditRecipe(recipe) {
+      try {
+        const formData = new FormData();
+        formData.append('title', recipe.title);
+        formData.append('time', recipe.time);
+        formData.append('difficulty', recipe.difficulty);
+        formData.append('people', recipe.people);
+        formData.append('cuisine', recipe.cuisine);
+        formData.append('type', recipe.type);
+        formData.append('public', recipe.public);
+        formData.append('ingredients', JSON.stringify(recipe.ingredients));
+        formData.append('instructions', JSON.stringify(recipe.instructions));
+        formData.append('restrictionsList', JSON.stringify(recipe.restrictionsList));
+        formData.append('created_by_ai', recipe.created_by_ai);
+        if (recipe.image) {
+          formData.append('image', recipe.image);
+        }
+
+        const response = await axios.post(
+          `${process.env.VUE_APP_URL_BACKEND}/recipes/save`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            withCredentials: true,
+          }
+        );
+
+        if (response.status === 201) {
+          alert('Recette enregistrée avec succès !');
+        }
+      } catch (error) {
+        console.error('Erreur lors de l\'enregistrement de la recette :', error);
+        alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
+      }
+    },
     async getUserRestrictions() {
       try {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
@@ -596,18 +652,18 @@ button:disabled:hover {
 }
 .recipe-image {
   width: 100%;
-  max-width: 200px; /* Limitez la largeur maximale de l'image */
+  max-width: 200px;
   height: auto;
   border-radius: 10px;
   margin-top: 10px;
-  object-fit: cover; /* Permet de recadrer l'image pour remplir son conteneur sans déformer le ratio */
+  object-fit: cover;
 }
 .modal-recipe-image {
   width: 100%;
-  max-width: 400px; /* Limitez la largeur maximale pour ne pas avoir une image trop grande dans le modal */
+  max-width: 400px;
   height: auto;
   border-radius: 10px;
   margin-bottom: 20px;
-  object-fit: contain; /* Permet d'ajuster l'image à l'intérieur du conteneur sans la couper */
+  object-fit: contain;
 }
 </style>

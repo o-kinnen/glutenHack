@@ -1,9 +1,6 @@
 <template>
   <div class="recipe-page">
     <h2>Toutes les recettes</h2>
-    <div v-if="errorMessage" class="error-message">
-      <p>{{ errorMessage }}</p>
-    </div>
     <div v-if="recipes.length === 0" class="no-recipes">
       <p>Aucune recette n'a été enregistrée pour le moment.</p>
     </div>

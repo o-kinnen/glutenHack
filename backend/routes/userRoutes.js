@@ -19,5 +19,6 @@ router.get('/fridge', authMiddleware, userController.getFridgeContents);
 router.post('/fridge/add', authMiddleware, userController.addFoodToFridge);
 router.delete('/fridge/delete', authMiddleware, userController.removeFoodFromFridge);
 router.put('/fridge/update', authMiddleware, userController.updateFoodQuantity);
+router.post('/test', authMiddleware, userController.Test);
 
 module.exports = router;

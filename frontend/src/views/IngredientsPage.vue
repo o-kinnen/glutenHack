@@ -14,11 +14,42 @@
         </select>
         <button @click="addIngredient" :disabled="isLoading">Ajouter</button>
       </div>
+
       <div class="search-container">
         <input v-model="searchIngredient" placeholder="Rechercher un ingrédient" />
         <button @click="sortIngredientsByCategory" class="sort-button">Trier par catégorie</button>
       </div>
-      <div v-if="isLoading" class="loading-spinner">Chargement...</div>
+
+      <div class="upload-container">
+        <h5>Uploader une photo :</h5>
+        <input type="file" @change="onFileChange" accept="image/*" />
+        <div v-if="imageUrl" class="image-preview">
+          <img :src="imageUrl" alt="Aperçu de l'image" />
+        </div>
+        <button @click="analyzeImage" :disabled="!imageFile || isLoading">Analyser</button>
+      </div>
+
+      <div v-if="analysisResult.length > 0" class="analysis-results">
+        <h5>Résultats de l'analyse :</h5>
+        <ul>
+          <li v-for="(item, index) in analysisResult" :key="index">
+            <label>
+              <input type="checkbox" v-model="item.selected" />
+              {{ item.name }} - {{ (item.probability * 100).toFixed(2) }}%
+            </label>
+            <input v-model="item.quantity" type="number" min="1" placeholder="Quantité" class="quantity-input" />
+            <select v-model="item.unit" class="unit-select">
+              <option value="">Unités (optionnel)</option>
+              <option value="g">g</option>
+              <option value="ml">ml</option>
+              <option value="kg">kg</option>
+              <option value="l">l</option>
+            </select>
+          </li>
+        </ul>
+        <button @click="validateSelection" class="validate-button">Valider</button>
+      </div>
+
       <div v-if="sortByCategory" class="ingredient-list">
         <div v-for="(categoryGroup, category) in categorizedIngredients" :key="category" class="category-group">
           <h5 class="category-title">{{ category }}</h5>
@@ -54,10 +85,12 @@
           </li>
         </ul>
       </div>
+
+      <div v-if="isLoading" class="loading-spinner">Chargement...</div>
     </div>
   </div>
 </template>
-  
+
 <script>
 import axios from 'axios';
 
@@ -70,6 +103,9 @@ export default {
       newUnit: "",
       searchIngredient: "",
       ingredients: [],
+      imageFile: null,
+      imageUrl: "",
+      analysisResult: [],
       isLoading: false,
       sortByCategory: false
     };
@@ -101,6 +137,57 @@ export default {
     this.fetchIngredientsFromFridge();
   },
   methods: {
+    onFileChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.imageFile = file;
+        this.imageUrl = URL.createObjectURL(file);
+      }
+    },
+    async analyzeImage() {
+      if (!this.imageFile) return;
+
+      const formData = new FormData();
+      formData.append("image", this.imageFile);
+
+      try {
+        this.isLoading = true;
+        const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/test`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
+        });
+
+        if (response.data && response.data.data) {
+          this.analysisResult = response.data.data.map(item => ({
+            ...item,
+            selected: false,
+            quantity: '',
+            unit: ''
+          }));
+        } else {
+          this.analysisResult = [];
+          alert("Aucun ingrédient trouvé dans l'image.");
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'analyse de l'image :", error);
+        alert("Une erreur est survenue lors de l'analyse de l'image.");
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    validateSelection() {
+      const selectedItems = this.analysisResult.filter(item => item.selected && item.quantity);
+      selectedItems.forEach(item => {
+        this.ingredients.push({
+          name: item.name,
+          quantity: `${item.quantity} ${item.unit}`.trim(),
+          category: 'ajoutés',
+          updateQuantity: 0
+        });
+      });
+      this.analysisResult = [];
+    },
     async fetchIngredientsFromFridge() {
       try {
         this.isLoading = true;
@@ -291,18 +378,41 @@ export default {
   text-align: left;
   margin: 20px 0;
 }
-.input-container {
-  display: flex;
-  gap: 10px;
+.input-container, .upload-container {
+  margin-top: 20px;
 }
 .search-container {
   margin-top: 10px;
   display: flex;
   gap: 10px;
 }
-.ingredient-list {
-  list-style-type: none;
-  padding: 0;
+.image-preview {
+  margin-top: 10px;
+  max-width: 300px;
+}
+.image-preview img {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+.analysis-results {
+  margin-top: 20px;
+}
+.analysis-results .quantity-input {
+  margin-left: 10px;
+  width: 80px;
+}
+.analysis-results .unit-select {
+  margin-left: 5px;
+}
+.analysis-results .validate-button {
+  margin-top: 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
 }
 .category-group {
   margin-top: 20px;
@@ -383,4 +493,3 @@ button:disabled {
   align-items: center;
 }
 </style>
-

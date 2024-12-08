@@ -3,6 +3,10 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const User = require('../models/userModel');
 const pool = require('../utils/db');
+const Clarifai = require('clarifai');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 
 exports.getAllUsers = async (req, res, next) => {
@@ -304,3 +308,43 @@ exports.updateFoodQuantity = async (req, res) => {
   }
 };
 
+const clarifaiApp = new Clarifai.App({
+  apiKey: `${process.env.CLARIFAI_API_KEY}`
+});
+
+const upload = multer({ dest: 'uploads/' });
+
+exports.Test = [
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Aucun fichier fourni.' });
+      }
+
+      const imagePath = path.join(__dirname, '../', req.file.path);
+      const imageBase64 = fs.readFileSync(imagePath, { encoding: 'base64' });
+
+      const response = await clarifaiApp.models.predict('food-item-recognition', { base64: imageBase64 });
+
+      fs.unlinkSync(imagePath);
+
+      const concepts = response.outputs[0].data.concepts;
+      const aliments = concepts.map(item => ({
+        name: item.name,
+        probability: item.value
+      }));
+
+      res.status(200).json({
+        success: true,
+        data: aliments
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'analyse de l\'image :', error);
+      res.status(500).json({
+        success: false,
+        message: 'Une erreur est survenue lors du traitement de votre demande.'
+      });
+    }
+  }
+];

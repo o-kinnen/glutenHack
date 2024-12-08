@@ -8,6 +8,7 @@ const recipeRoutes = require('./routes/recipeRoutes');
 const shoppingListRoutes = require('./routes/shoppingListRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const app = express();
+const path = require('path');
 
 app.use(cors({
     origin: process.env.URL_FRONTEND,
@@ -17,6 +18,9 @@ app.use(cors({
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use('/users', userRoutes);
 app.use('/openai', openaiRoutes);
 app.use('/recipes', recipeRoutes);

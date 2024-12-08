@@ -104,6 +104,7 @@ const getAllRecipes = async () => {
         r.allergens_list,
         r.created_by_ai,
         r.public,
+        r.image_url,
         json_agg(
           json_build_object(
             'food_id', ri.food_id,
@@ -151,6 +152,7 @@ const getRecipesByUserId = async (user_id) => {
         r.allergens_list,
         r.created_by_ai,
         r.public,
+        r.image_url,
         json_agg(
           json_build_object(
             'food_id', ri.food_id,

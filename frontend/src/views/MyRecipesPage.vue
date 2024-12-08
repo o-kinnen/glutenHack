@@ -7,6 +7,7 @@
       <div v-else class="recipes-list">
         <div v-for="(recipe, index) in recipes" :key="recipe.recipe_id" class="recipe-card">
           <h3>{{ recipe.recipe_name }}</h3>
+          <img v-if="recipe.image_url" :src="recipe.image_url" alt="Image de la recette" class="modal-recipe-image" />
           <button @click="openModal(index)">Voir les détails</button>
         </div>
       </div>
@@ -14,8 +15,10 @@
         <div class="modal-content">
           <button class="close-btn" @click="closeModal">X</button>
           <h3>{{ currentRecipe.recipe_name }}</h3>
+          <img v-if="currentRecipe.image_url" :src="currentRecipe.image_url" alt="Image de la recette" class="recipe-image" />
           <div class="recipe-info-container">
             <div class="recipe-info-line">
+              <div class="info-item"><strong>Généré par l'IA :</strong> {{ currentRecipe.created_by_ai ? 'Oui' : 'Non' }}</div>
               <div class="info-item"><strong>Temps de préparation:</strong> {{ currentRecipe.preparation_time }}</div>
               <div class="info-item"><strong>Difficulté:</strong> {{ currentRecipe.difficulty }}</div>
               <div class="info-item"><strong>Nombre de personnes:</strong> {{ currentRecipe.number_of_person }}</div>
@@ -196,5 +199,21 @@
     color: #666;
     margin-top: 20px;
   }
+.recipe-image {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 10px;
+  object-fit: cover;
+}
+.modal-recipe-image {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  object-fit: contain;
+}
   </style>
   

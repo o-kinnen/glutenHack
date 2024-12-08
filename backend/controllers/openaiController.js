@@ -2,6 +2,9 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/userModel');
 const recipeModel = require('../models/recipeModel');
+const path = require('path');
+const fs = require('fs');
+
 
 const getRecipe = async (req, res) => {
   try {
@@ -105,8 +108,21 @@ const generateRecipeImage = async (recipeTitle) => {
     );
 
     if (response.data && response.data.data && response.data.data.length > 0) {
-      console.log('URL de l\'image générée:', response.data.data[0].url);
-      return response.data.data[0].url;
+      const imageUrl = response.data.data[0].url;
+      const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
+      const imageFileName = `${Date.now()}-${recipeTitle.replace(/ /g, '_')}.png`;
+      const imagePath = path.join(__dirname, '..', 'uploads', imageFileName);
+      const writer = fs.createWriteStream(imagePath);
+      
+      imageResponse.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          const fullUrl = `${process.env.URL_BACKEND}/uploads/${imageFileName}`;
+          resolve(fullUrl);
+        });
+        writer.on('error', reject);
+      });
     } else {
       throw new Error('Erreur lors de la génération de l\'image : aucune donnée renvoyée.');
     }
@@ -183,6 +199,10 @@ const saveRecipe = async (req, res) => {
 
     const instructionsString = parsedInstructions.map((inst) => inst.step ? inst.step : inst).join('\n');
 
+    const imageUrl = req.file
+      ? `${process.env.URL_BACKEND}/uploads/${req.file.filename}`
+      : recipe.image || null;
+
     const recipeData = {
       recipe_name: title,
       instructions: instructionsString,
@@ -196,7 +216,7 @@ const saveRecipe = async (req, res) => {
       user_id: user.user_id,
       created_by_ai: isGeneratedByAI,
       public: isRecipePublic,
-      image_url: req.file ? req.file.path : recipe.image || null
+      image_url: imageUrl
     };
 
     const recipeId = await recipeModel.saveRecipe(recipeData);

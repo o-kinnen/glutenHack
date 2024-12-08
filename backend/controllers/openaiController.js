@@ -15,7 +15,7 @@ const getRecipe = async (req, res) => {
 
     if (availableIngredients && availableIngredients.length > 0) {
       const stockIngredients = availableIngredients
-        .map(ingredient => `${ingredient.food_name} (${ingredient.quantity})`)
+        .map(ingredient => `${ingredient.food_name}`)
         .join(', ');
       content += ` Il faut qu'un maximum des ingrédients suivants soient utilisés : ${stockIngredients}.`;
     }

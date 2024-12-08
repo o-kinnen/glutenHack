@@ -140,16 +140,33 @@
         </div>
       </div>
     </modal>
-    <modal v-if="showStockModal" @close="showStockModal = false">
-      <div class="modal-content">
-        <h3>Votre liste d’ingrédients en stock est vide</h3>
-        <p>Voulez-vous ajouter des ingrédients en stock ? Vous serez redirigé vers la page des ingrédients.</p>
-        <div class="modal-actions">
-          <button @click="handleStockModalResponse('add')" class="confirm-btn">Ajouter des ingrédients</button>
-          <button @click="handleStockModalResponse('cancel')" class="cancel-btn">Annuler</button>
-        </div>
-      </div>
-    </modal>
+    <modal v-if="showStockModal" @close="closeStockSelectionModal">
+  <div class="modal-content">
+    <template v-if="availableIngredients.length > 0">
+      <h3>Sélectionnez les ingrédients à inclure</h3>
+      <ul>
+        <li v-for="(ingredient, index) in availableIngredients" :key="index">
+          <label>
+            <input 
+              type="checkbox" 
+              :value="ingredient" 
+              v-model="selectedIngredients" 
+            />
+            {{ ingredient.food_name }}
+          </label>
+        </li>
+      </ul>
+      <button @click="confirmSelection" class="confirm-btn">Confirmer</button>
+    </template>
+    <template v-else>
+      <h3>Votre liste d’ingrédients en stock est vide</h3>
+      <p>Voulez-vous ajouter des ingrédients en stock ? Vous serez redirigé vers la page des ingrédients.</p>
+      <button @click="handleStockModalResponse('add')" class="confirm-btn">Ajouter des ingrédients</button>
+      <button @click="handleStockModalResponse('cancel')" class="cancel-btn">Annuler</button>
+    </template>
+  </div>
+</modal>
+
   </div>
 </template>
   
@@ -194,7 +211,8 @@ export default {
       people: '',
       type: '',
       public: true,
-      availableIngredients: []
+      availableIngredients: [],
+      selectedIngredients: []
     };
   },
   mounted() {
@@ -276,8 +294,15 @@ export default {
       if (this.availableIngredients.length === 0) {
         this.showStockModal = true;
       } else {
-        this.includeStock = !this.includeStock;
+        this.showStockModal = true;
       }
+    },
+    closeStockSelectionModal() {
+      this.showStockModal = false;
+    },
+    confirmSelection() {
+      this.includeStock = true;
+      this.showStockModal = false;
     },
     handleStockModalResponse(response) {
       if (response === 'add') {
@@ -310,7 +335,7 @@ export default {
           cuisine: this.selectedCuisine,
           people: this.selectedPeople,
           type: this.selectedType,
-          availableIngredients: this.includeStock ? this.availableIngredients : []
+          availableIngredients: this.includeStock ? this.selectedIngredients : []
         };
 
         const response = await axios.post(
@@ -573,6 +598,10 @@ button:hover {
   z-index: 1000;
 }
 .modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   max-height: 90vh;
   overflow-y: auto;
   background: #fff;
@@ -582,7 +611,9 @@ button:hover {
   max-width: 700px;
   text-align: left;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
 }
+
 .confirm-btn {
   background-color: #4caf50;
   color: white;

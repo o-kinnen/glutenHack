@@ -6,6 +6,7 @@ const userRoutes = require('./routes/userRoutes');
 const openaiRoutes = require('./routes/openaiRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const shoppingListRoutes = require('./routes/shoppingListRoutes');
+const foodRoutes = require('./routes/foodRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 const path = require('path');
@@ -25,6 +26,7 @@ app.use('/users', userRoutes);
 app.use('/openai', openaiRoutes);
 app.use('/recipes', recipeRoutes);
 app.use('/shopping-list', shoppingListRoutes);
+app.use('/api', foodRoutes);
 app.use(errorHandler);
 
 module.exports = app;

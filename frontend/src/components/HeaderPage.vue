@@ -30,9 +30,6 @@
               <router-link to="/analyse" class="nav-link">Analyse des aliments</router-link>
             </li>
             <li class="nav-item" v-if="isAuthenticated">
-              <router-link to="/planner" class="nav-link">Planification</router-link>
-            </li>
-            <li class="nav-item" v-if="isAuthenticated">
               <router-link to="/profile" class="nav-link">Profil</router-link>
             </li>
           </ul>

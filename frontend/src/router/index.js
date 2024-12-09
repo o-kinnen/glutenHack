@@ -13,7 +13,6 @@ const routes = [
   { path: '/recipes', name: 'AllRecipesPage', component: () => import('@/views/AllRecipesPage.vue'), meta: { requiresAuth: true } },
   { path: '/analyse', name: 'AnalysePage', component: () => import('@/views/AnalysePage.vue'), meta: { requiresAuth: true } },
   { path: '/grocery', name: 'GroceryList', component: () => import('@/views/GroceryList.vue'), meta: { requiresAuth: true } },
-  { path: '/planner', name: 'PlannerPage', component: () => import('@/views/PlannerPage.vue'), meta: { requiresAuth: true } },
   { path: '/my-recipes', name: 'MyRecipesPage', component: () => import('@/views/MyRecipesPage.vue'), meta: { requiresAuth: true } },
   { path: '/ingredients', name: 'IngredientsPage', component: () => import('@/views/IngredientsPage.vue'), meta: { requiresAuth: true } }
 ]

@@ -31,12 +31,18 @@
 
       <div v-if="analysisResult.length > 0" class="analysis-results">
         <h5>Résultats de l'analyse :</h5>
-        <ul>
-          <li v-for="(item, index) in analysisResult" :key="index">
-            <label>
-              <input type="checkbox" v-model="item.selected" />
-              {{ item.name }} - {{ (item.probability * 100).toFixed(2) }}%
-            </label>
+        <div class="analysis-grid">
+          <div class="grid-header">
+            <span>Sélection</span>
+            <span>Aliment</span>
+            <span>Probabilité</span>
+            <span>Quantité</span>
+            <span>Unités</span>
+          </div>
+          <div v-for="(item, index) in analysisResult" :key="index" class="grid-row">
+            <input type="checkbox" v-model="item.selected" />
+            <span>{{ item.name }}</span>
+            <span>{{ (item.probability * 100).toFixed(2) }}%</span>
             <input v-model="item.quantity" type="number" min="1" placeholder="Quantité" class="quantity-input" />
             <select v-model="item.unit" class="unit-select">
               <option value="">Unités (optionnel)</option>
@@ -45,8 +51,8 @@
               <option value="kg">kg</option>
               <option value="l">l</option>
             </select>
-          </li>
-        </ul>
+          </div>
+        </div>
         <button @click="validateSelection" class="validate-button">Valider</button>
       </div>
 
@@ -398,12 +404,34 @@ export default {
 .analysis-results {
   margin-top: 20px;
 }
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 0.5fr 2fr 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.grid-header {
+  font-weight: bold;
+  text-align: center;
+  background-color: #f8f8f8;
+  padding: 10px;
+  border-bottom: 2px solid #ddd;
+  display: contents;
+}
+.grid-row {
+  display: contents;
+}
+.grid-row span {
+  text-align: center;
+}
 .analysis-results .quantity-input {
-  margin-left: 10px;
-  width: 80px;
+  margin-left: 5px;
+  width: 100%;
+  padding: 5px;
 }
 .analysis-results .unit-select {
   margin-left: 5px;
+  padding: 5px;
 }
 .analysis-results .validate-button {
   margin-top: 20px;

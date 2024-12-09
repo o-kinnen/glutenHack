@@ -2,7 +2,7 @@ const axios = require('axios');
 const { Translate } = require('@google-cloud/translate').v2;
 
 const translate = new Translate({
-  key: 'AIzaSyCJNMdauM69KSaE39dWtEnZxEjHPXapXLI',
+  key: `${process.env.GOOGLE_TRANSLATE_API}`,
 });
 
 const verifierAliment = async (req, res) => {

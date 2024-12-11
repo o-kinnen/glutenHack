@@ -7,6 +7,8 @@ const Clarifai = require('clarifai');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+
 
 
 exports.getAllUsers = async (req, res, next) => {
@@ -21,19 +23,30 @@ exports.getAllUsers = async (req, res, next) => {
 exports.signupUser = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
+
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: 'Ce compte existe déjà.' });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, password: hashedPassword });
-    const token = jwt.sign({ user_id: newUser.user_id, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 heure
+
+    await pool.query(
+      'INSERT INTO tokens (token, user_id, expires_at) VALUES ($1, $2, $3)',
+      [token, newUser.user_id, expiresAt]
+    );
+
     res.cookie('token', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'Lax',
       maxAge: 3600000,
     });
+
     res.status(201).json({ message: 'Utilisateur enregistré avec succès.' });
   } catch (error) {
     console.error('Erreur attrapée dans signupUser:', error.message);
@@ -41,24 +54,34 @@ exports.signupUser = async (req, res, next) => {
   }
 };
 
+
 exports.loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findByEmail(email);
+
     if (!user) {
       return res.status(404).json({ message: 'Compte non trouvé.' });
     }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Mot de passe incorrect.' });
     }
 
     const restrictions = await User.getRestrictionsByUserId(user.user_id);
-    const token = jwt.sign({ user_id: user.user_id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 heure
+
+    await pool.query(
+      'INSERT INTO tokens (token, user_id, expires_at) VALUES ($1, $2, $3)',
+      [token, user.user_id, expiresAt]
+    );
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: 'false',
+      secure: false,
       sameSite: 'Lax',
       maxAge: 3600000,
     });
@@ -76,6 +99,7 @@ exports.loginUser = async (req, res, next) => {
     res.status(500).json({ message: 'Erreur serveur. Veuillez réessayer plus tard.' });
   }
 };
+
 
 exports.profileUser = async (req, res, next) => {
   try {
@@ -132,29 +156,34 @@ exports.checkAuth = async (req, res) => {
   }
 };
 
-exports.logoutUser = (req, res) => {
+exports.logoutUser = async (req, res) => {
   const token = req.cookies.token;
+
   if (!token) {
     return res.status(401).json({ message: 'Accès non autorisé.' });
   }
-  res.clearCookie('token');
-  res.status(200).json({ message: 'Déconnexion réussie.' });
+
+  try {
+    await pool.query('DELETE FROM tokens WHERE token = $1', [token]);
+    res.clearCookie('token');
+    res.status(200).json({ message: 'Déconnexion réussie.' });
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion :', error.message);
+    res.status(500).json({ message: 'Erreur lors de la déconnexion.' });
+  }
 };
+
 
 exports.deleteUser = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
-    if (!token) {
-      return res.status(401).json({ message: 'Accès non autorisé.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.user_id);
+    const user = await User.findById(req.user.user_id);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
 
     await User.delete(user.user_id);
+    await pool.query('DELETE FROM tokens WHERE user_id = $1', [user.user_id]);
+
     res.clearCookie('token');
     res.status(200).json({ message: 'Compte utilisateur supprimé avec succès.' });
   } catch (error) {
@@ -162,6 +191,7 @@ exports.deleteUser = async (req, res, next) => {
     next(error);
   }
 };
+
 
 exports.sendResetLink = async (req, res, next) => {
   try {

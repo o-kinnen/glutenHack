@@ -1,0 +1,118 @@
+<template>
+  <div>
+    <h1>Mes analyses</h1>
+    <p>Recherchez un aliment en scannant ou en entrant son code-barre pour savoir s'il est sûr pour vous.</p>
+
+    <div>
+      <label for="codeBarreInput">Entrez un code-barre :</label>
+      <input 
+        type="text" 
+        id="codeBarreInput" 
+        v-model="codeBarre" 
+        placeholder="Entrez un code-barre" 
+      />
+      <button @click="verifierAliment">Vérifier</button>
+    </div>
+
+    <div v-if="resultat !== null" class="resultat">
+      <p><strong>Nom de l'aliment :</strong> {{ resultat.nomAliment }}</p>
+
+      <div v-if="resultat.imageUrl">
+        <p><strong>Photo de l'aliment :</strong></p>
+        <img :src="resultat.imageUrl" alt="Photo de l'aliment" style="max-width: 200px; border: 1px solid #ccc;" />
+      </div>
+
+      <p v-if="!resultat.peutManger">
+        ⚠️ Cet aliment contient des allergènes problématiques pour vous : {{ resultat.allergenesProbleme.join(', ') }}
+      </p>
+      <p v-else>
+        ✅ Cet aliment est sûr pour vous. Aucun allergène problématique détecté.
+      </p>
+
+      <p>Liste complète des allergènes identifiés : {{ resultat.allergenes.join(', ') }}</p>
+
+      <p class="source">
+        <small>{{ resultat.source }}</small>
+      </p>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  name: "AnalysePage",
+  data() {
+    return {
+      codeBarre: "",
+      resultat: null, 
+    };
+  },
+  methods: {
+    async getUserRestrictions() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
+          withCredentials: true,
+        });
+        return (response.data.restrictions || []).map(restriction => restriction.toLowerCase());
+      } catch (error) {
+        console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
+        alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
+        return [];
+      }
+    },
+
+    async verifierAliment() {
+      const codeBarre = this.codeBarre ? this.codeBarre.trim() : "";
+
+      if (!codeBarre) {
+        alert("Veuillez entrer un code-barre.");
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/api/food`, { params: { codeBarre } });
+        const allergenesAliment = response.data.allergenes || [];
+        const nomAliment = response.data.nomAliment || "Nom inconnu";
+        const imageUrl = response.data.imageUrl || ""; 
+        const source = response.data.source || "";
+
+        const restrictionsUtilisateur = await this.getUserRestrictions();
+
+        const allergenesProbleme = allergenesAliment.filter(allergene =>
+          restrictionsUtilisateur.includes(allergene.toLowerCase())
+        );
+
+        this.resultat = {
+          nomAliment, 
+          imageUrl, 
+          allergenes: allergenesAliment,
+          peutManger: allergenesProbleme.length === 0,
+          allergenesProbleme,
+          source,
+        };
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'aliment :", error);
+        alert("Une erreur est survenue lors de la vérification. Veuillez réessayer.");
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.resultat {
+  margin-top: 20px;
+  font-size: 1.2em;
+}
+img {
+  display: block;
+  margin: 10px 0;
+}
+.source {
+  margin-top: 20px;
+  font-size: 0.9em;
+  color: #666;
+}
+</style>

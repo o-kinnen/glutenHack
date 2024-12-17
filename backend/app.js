@@ -22,11 +22,18 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use('/users', userRoutes);
 app.use('/openai', openaiRoutes);
 app.use('/recipes', recipeRoutes);
 app.use('/shopping-list', shoppingListRoutes);
 app.use('/api', foodRoutes);
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.use(errorHandler);
 
 module.exports = app;

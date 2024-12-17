@@ -26,16 +26,20 @@ const User = {
 
   delete: async (user_id) => {
     try {
-      await pool.query('DELETE FROM "dietary_restrictions" WHERE user_id = $1', [user_id]);
-      await pool.query('DELETE FROM "favorites" WHERE user_id = $1', [user_id]);
-      await pool.query('DELETE FROM "shopping_list_items" WHERE list_id IN (SELECT list_id FROM "shopping_list" WHERE user_id = $1)', [user_id]);
-      await pool.query('DELETE FROM "shopping_list" WHERE user_id = $1', [user_id]);
+        await pool.query('UPDATE "recipes" SET user_id = 156 WHERE user_id = $1 AND public = true', [user_id]);
 
-      const result = await pool.query('DELETE FROM "users" WHERE user_id = $1 RETURNING *', [user_id]);
-      return result.rows[0];
+        await pool.query('DELETE FROM "recipes" WHERE user_id = $1 AND public = false', [user_id]);
+
+        await pool.query('DELETE FROM "dietary_restrictions" WHERE user_id = $1', [user_id]);
+        await pool.query('DELETE FROM "favorites" WHERE user_id = $1', [user_id]);
+        await pool.query('DELETE FROM "shopping_list_items" WHERE list_id IN (SELECT list_id FROM "shopping_list" WHERE user_id = $1)', [user_id]);
+        await pool.query('DELETE FROM "shopping_list" WHERE user_id = $1', [user_id]);
+
+        const result = await pool.query('DELETE FROM "users" WHERE user_id = $1 RETURNING *', [user_id]);
+        return result.rows[0];
     } catch (error) {
-      console.error("Erreur lors de la suppression de l'utilisateur :", error);
-      throw new Error('Erreur lors de la suppression de l’utilisateur.');
+        console.error("Erreur lors de la suppression de l'utilisateur :", error);
+        throw new Error('Erreur lors de la suppression de l’utilisateur.');
     }
   },
 

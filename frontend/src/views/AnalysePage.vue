@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Mes analyses</h1>
-    <p>Recherchez un aliment par code-barre ou nom pour savoir s'il est sûr pour vous.</p>
+    <p>Recherchez un aliment en scannant ou en entrant son code-barre pour savoir s'il est sûr pour vous.</p>
 
     <div>
       <label for="codeBarreInput">Entrez un code-barre :</label>
@@ -11,17 +11,17 @@
         v-model="codeBarre" 
         placeholder="Entrez un code-barre" 
       />
-      <label for="alimentInput">Ou entrez un nom d'aliment :</label>
-      <input 
-        type="text" 
-        id="alimentInput" 
-        v-model="aliment" 
-        placeholder="Entrez un aliment" 
-      />
       <button @click="verifierAliment">Vérifier</button>
     </div>
 
     <div v-if="resultat !== null" class="resultat">
+      <p><strong>Nom de l'aliment :</strong> {{ resultat.nomAliment }}</p>
+
+      <div v-if="resultat.imageUrl">
+        <p><strong>Photo de l'aliment :</strong></p>
+        <img :src="resultat.imageUrl" alt="Photo de l'aliment" style="max-width: 200px; border: 1px solid #ccc;" />
+      </div>
+
       <p v-if="!resultat.peutManger">
         ⚠️ Cet aliment contient des allergènes problématiques pour vous : {{ resultat.allergenesProbleme.join(', ') }}
       </p>
@@ -30,6 +30,10 @@
       </p>
 
       <p>Liste complète des allergènes identifiés : {{ resultat.allergenes.join(', ') }}</p>
+
+      <p class="source">
+        <small>{{ resultat.source }}</small>
+      </p>
     </div>
   </div>
 </template>
@@ -42,7 +46,6 @@ export default {
   data() {
     return {
       codeBarre: "",
-      aliment: "",
       resultat: null, 
     };
   },
@@ -62,18 +65,18 @@ export default {
 
     async verifierAliment() {
       const codeBarre = this.codeBarre ? this.codeBarre.trim() : "";
-      const aliment = this.aliment ? this.aliment.trim() : "";
 
-      if (!codeBarre && !aliment) {
-        alert("Veuillez entrer un code-barre ou un nom d'aliment.");
+      if (!codeBarre) {
+        alert("Veuillez entrer un code-barre.");
         return;
       }
 
       try {
-        const params = codeBarre ? { codeBarre } : { aliment };
-
-        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/api/food`, { params });
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/api/food`, { params: { codeBarre } });
         const allergenesAliment = response.data.allergenes || [];
+        const nomAliment = response.data.nomAliment || "Nom inconnu";
+        const imageUrl = response.data.imageUrl || ""; 
+        const source = response.data.source || "";
 
         const restrictionsUtilisateur = await this.getUserRestrictions();
 
@@ -81,19 +84,14 @@ export default {
           restrictionsUtilisateur.includes(allergene.toLowerCase())
         );
 
-        if (allergenesProbleme.length > 0) {
-          this.resultat = {
-            allergenes: allergenesAliment,
-            peutManger: false,
-            allergenesProbleme: allergenesProbleme,
-          };
-        } else {
-          this.resultat = {
-            allergenes: allergenesAliment,
-            peutManger: true,
-            allergenesProbleme: [],
-          };
-        }
+        this.resultat = {
+          nomAliment, 
+          imageUrl, 
+          allergenes: allergenesAliment,
+          peutManger: allergenesProbleme.length === 0,
+          allergenesProbleme,
+          source,
+        };
       } catch (error) {
         console.error("Erreur lors de la vérification de l'aliment :", error);
         alert("Une erreur est survenue lors de la vérification. Veuillez réessayer.");
@@ -108,5 +106,13 @@ export default {
   margin-top: 20px;
   font-size: 1.2em;
 }
+img {
+  display: block;
+  margin: 10px 0;
+}
+.source {
+  margin-top: 20px;
+  font-size: 0.9em;
+  color: #666;
+}
 </style>
-

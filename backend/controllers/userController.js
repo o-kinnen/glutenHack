@@ -173,7 +173,6 @@ exports.logoutUser = async (req, res) => {
   }
 };
 
-
 exports.deleteUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.user_id);
@@ -182,16 +181,19 @@ exports.deleteUser = async (req, res, next) => {
     }
 
     await User.delete(user.user_id);
+
     await pool.query('DELETE FROM tokens WHERE user_id = $1', [user.user_id]);
 
     res.clearCookie('token');
-    res.status(200).json({ message: 'Compte utilisateur supprimé avec succès.' });
+
+    res.status(200).json({ 
+      message: 'Compte utilisateur supprimé avec succès. Les recettes publiques ont été anonymisées, et les recettes privées ont été supprimées.' 
+    });
   } catch (error) {
     console.error('Erreur lors de la suppression de l’utilisateur :', error);
     next(error);
   }
 };
-
 
 exports.sendResetLink = async (req, res, next) => {
   try {

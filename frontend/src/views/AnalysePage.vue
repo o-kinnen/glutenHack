@@ -29,8 +29,6 @@
         ✅ Cet aliment est sûr pour vous. Aucun allergène problématique détecté.
       </p>
 
-      <p>Liste complète des allergènes identifiés : {{ resultat.allergenes.join(', ') }}</p>
-
       <p class="source">
         <small>{{ resultat.source }}</small>
       </p>
@@ -74,8 +72,9 @@ export default {
       try {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/api/food`, { params: { codeBarre } });
         const allergenesAliment = response.data.allergenes || [];
-        const nomAliment = response.data.nomAliment || "Nom inconnu";
-        const imageUrl = response.data.imageUrl || ""; 
+        const nomAliment = response.data.barcode_name || "Nom inconnu";
+        const imageUrl = response.data.imageUrl || "";
+        console.log("Image URL :", imageUrl); 
         const source = response.data.source || "";
 
         const restrictionsUtilisateur = await this.getUserRestrictions();

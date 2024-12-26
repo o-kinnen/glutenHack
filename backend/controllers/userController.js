@@ -341,12 +341,18 @@ exports.updateFoodQuantity = async (req, res) => {
 };
 
 const clarifaiApp = new Clarifai.App({
-  apiKey: `${process.env.CLARIFAI_API_KEY}`
+  apiKey: `${process.env.CLARIFAI_API_KEY}`,
 });
 
 const upload = multer({ dest: 'uploads/' });
 
-exports.Test = [
+const { Translate } = require('@google-cloud/translate').v2;
+
+const translate = new Translate({
+  key: process.env.GOOGLE_TRANSLATE_API,
+});
+
+exports.analyzeImage = [
   upload.single('image'),
   async (req, res) => {
     try {
@@ -362,21 +368,30 @@ exports.Test = [
       fs.unlinkSync(imagePath);
 
       const concepts = response.outputs[0].data.concepts;
+
       const aliments = concepts.map(item => ({
         name: item.name,
-        probability: item.value
+        probability: item.value,
+      }));
+
+      const namesToTranslate = aliments.map(aliment => aliment.name);
+      const [translations] = await translate.translate(namesToTranslate, 'fr');
+
+      const translatedAliments = aliments.map((aliment, index) => ({
+        ...aliment,
+        name: translations[index]
       }));
 
       res.status(200).json({
         success: true,
-        data: aliments
+        data: translatedAliments
       });
     } catch (error) {
-      console.error('Erreur lors de l\'analyse de l\'image :', error);
+      console.error('Erreur lors de l\'analyse de l\'image ou de la traduction :', error);
       res.status(500).json({
         success: false,
-        message: 'Une erreur est survenue lors du traitement de votre demande.'
+        message: 'Une erreur est survenue lors du traitement de votre demande.',
       });
     }
-  }
+  },
 ];

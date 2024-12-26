@@ -2,8 +2,9 @@
   <div class="add-ingredients-container">
     <div class="add-ingredients">
       <h4>Ajouter des ingrédients :</h4>
+
       <div class="input-container">
-        <input v-model="newIngredient" placeholder="Entrez un ingrédient" :disabled="isLoading" />
+        <input type="text" v-model="newIngredient" placeholder="Entrez un ingrédient ou un code-barre" :disabled="isLoading" />
         <input v-model="newQuantity" type="number" min="1" placeholder="Quantité" :disabled="isLoading"/>
         <select v-model="newUnit" :disabled="isLoading">
           <option value="">Unités (optionnel)</option>
@@ -213,34 +214,8 @@ export default {
       }
     },
     async addIngredient() {
-      const isBarcode = /^\d+$/.test(this.newIngredient.trim());
-      let ingredientName;
-
-      if (isBarcode) {
-        this.isLoading = true;
-        try {
-          const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${this.newIngredient}.json`);
-          const data = await response.json();
-          if (data && data.status === 1 && data.product && data.product.product_name) {
-            ingredientName = data.product.product_name;
-          } else {
-            alert("Produit non trouvé pour ce code-barres.");
-            return;
-          }
-        } catch (error) {
-          console.error("Erreur lors de la recherche du produit :", error);
-          alert("Une erreur est survenue lors de la recherche du produit.");
-          return;
-        } finally {
-          this.isLoading = false;
-        }
-      } else {
-        if (this.newIngredient.trim()) {
-          ingredientName = this.newIngredient.trim();
-        } else {
-          return;
-        }
-      }
+      const input = this.newIngredient.trim();
+      let ingredientName = input;
 
       if (ingredientName) {
         const existingIngredientIndex = this.ingredients.findIndex(

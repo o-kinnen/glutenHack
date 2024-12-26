@@ -74,7 +74,6 @@ export default {
         const allergenesAliment = response.data.allergenes || [];
         const nomAliment = response.data.barcode_name || "Nom inconnu";
         const imageUrl = response.data.imageUrl || "";
-        console.log("Image URL :", imageUrl); 
         const source = response.data.source || "";
 
         const restrictionsUtilisateur = await this.getUserRestrictions();

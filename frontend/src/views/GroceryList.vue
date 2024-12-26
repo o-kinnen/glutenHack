@@ -1,6 +1,7 @@
 <template>
   <div class="grocery-container">
     <h1>Ma liste des courses</h1>
+    <button @click="exportToFile" class="export-btn">Exporter</button>
     <ul class="grocery-list">
       <li v-for="(item, index) in shoppingItems" :key="index" class="grocery-item">
         <div class="grocery-details">
@@ -56,7 +57,20 @@ export default {
         }
       }
     },
+    exportToFile() {
+      const title = "Ma liste des courses\n\n";
+      const items = this.shoppingItems.map((item) => {
+        return `- ${item.food_name} ${item.quantity ? `(${item.quantity})` : ''}`;
+      }).join('\n');
+      const fileContent = title + items;
 
+      const blob = new Blob([fileContent], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Ma_liste_des_courses.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    },
     async deleteItem(foodName) {
       try {
         await axios.delete(
@@ -213,5 +227,18 @@ button {
 }
 .subtract-btn:hover {
   background-color: #e0a800;
+}
+.export-btn {
+  margin: 10px 0;
+  padding: 10px 15px;
+  font-size: 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.export-btn:hover {
+  background-color: #0056b3;
 }
 </style>

@@ -88,31 +88,62 @@ const User = {
     }
   },
 
-  addFoodToFridge : async (userId, foodName, quantity) => {
+  addFoodToFridge: async (userId, foodName, quantity) => {
     try {
-      const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
-
+      let barcode = null;
+      let foodId = null;
+  
+      let foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
+  
       if (foodResult.rows.length === 0) {
-        throw new Error('Aliment non trouvé.');
+        const isBarcode = /^\d+$/.test(foodName);
+  
+        let barcodeResult;
+        if (isBarcode) {
+          barcodeResult = await pool.query(
+            'SELECT barcode, barcode_name FROM barcodes WHERE barcode = $1',
+            [foodName]
+          );
+        } else {
+          barcodeResult = await pool.query(
+            'SELECT barcode, barcode_name FROM barcodes WHERE barcode_name = $1',
+            [foodName]
+          );
+        }
+  
+        if (barcodeResult.rows.length === 0) {
+          throw new Error('Aliment non trouvé dans barcodes.');
+        }
+  
+        barcode = barcodeResult.rows[0].barcode;
+        foodName = barcodeResult.rows[0].barcode_name;
+  
+      } else {
+        foodId = foodResult.rows[0].food_id;
       }
-
-      const foodId = foodResult.rows[0].food_id;
-
+  
       await pool.query(
-        'INSERT INTO users_fridge (user_id, food_id, quantity) VALUES ($1, $2, $3)',
-        [userId, foodId, quantity]
+        'INSERT INTO users_fridge (user_id, food_id, barcode, quantity, expiration_date) VALUES ($1, $2, $3, $4, $5)',
+        [userId, foodId, barcode, quantity, null]
       );
     } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'aliment au réfrigérateur :', error);
       throw error;
     }
-  },
+  },    
+
   getFridgeContents: async (userId) => {
     try {
       const result = await pool.query(`
-        SELECT f.food_name, uf.quantity, f.category
+        SELECT 
+          COALESCE(f.food_name, b.barcode_name) AS food_name,
+          uf.quantity,
+          COALESCE(f.category, 'Autres') AS category
         FROM users_fridge uf
-        JOIN foods f ON uf.food_id = f.food_id
-        WHERE uf.user_id = $1`, [userId]);
+        LEFT JOIN foods f ON uf.food_id = f.food_id
+        LEFT JOIN barcodes b ON uf.barcode = b.barcode
+        WHERE uf.user_id = $1
+      `, [userId]);
   
       return result.rows;
     } catch (error) {
@@ -122,42 +153,74 @@ const User = {
   },
   removeFoodFromFridge: async (userId, foodName) => {
     try {
+      let foodId = null;
+      let barcode = null;
+  
       const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
   
-      if (foodResult.rows.length === 0) {
-        throw new Error('Aliment non trouvé.');
+      if (foodResult.rows.length > 0) {
+        foodId = foodResult.rows[0].food_id;
+      } else {
+        const barcodeResult = await pool.query('SELECT barcode FROM barcodes WHERE barcode_name = $1', [foodName]);
+  
+        if (barcodeResult.rows.length > 0) {
+          barcode = barcodeResult.rows[0].barcode;
+        } else {
+          throw new Error('Aliment non trouvé dans foods ou barcodes.');
+        }
       }
   
-      const foodId = foodResult.rows[0].food_id;
-
       const deleteResult = await pool.query(
-        'DELETE FROM users_fridge WHERE user_id = $1 AND food_id = $2 RETURNING *',
-        [userId, foodId]
+        `DELETE FROM users_fridge 
+         WHERE user_id = $1 AND (food_id = $2 OR barcode = $3) 
+         RETURNING *`,
+        [userId, foodId, barcode]
       );
   
       if (deleteResult.rows.length === 0) {
         throw new Error('Aliment non trouvé dans le réfrigérateur de l\'utilisateur.');
       }
+  
+      return { message: 'Aliment supprimé avec succès.' };
     } catch (error) {
       console.error("Erreur lors de la suppression de l'aliment du réfrigérateur :", error);
       throw error;
     }
-  },
+  },  
+
   updateFoodQuantity: async (userId, foodName, quantity, unit) => {
     try {
+      let foodId = null;
+      let barcode = null;
+  
       const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
   
-      if (foodResult.rows.length === 0) {
-        throw new Error('Aliment non trouvé.');
+      if (foodResult.rows.length > 0) {
+        foodId = foodResult.rows[0].food_id;
+      } else {
+        const barcodeResult = await pool.query('SELECT barcode FROM barcodes WHERE barcode_name = $1', [foodName]);
+  
+        if (barcodeResult.rows.length > 0) {
+          barcode = barcodeResult.rows[0].barcode;
+        } else {
+          throw new Error('Aliment non trouvé dans foods ou barcodes.');
+        }
       }
   
-      const foodId = foodResult.rows[0].food_id;
       const quantityWithUnit = `${quantity} ${unit}`.trim();
   
-      await pool.query(
-        'UPDATE users_fridge SET quantity = $1 WHERE user_id = $2 AND food_id = $3',
-        [quantityWithUnit, userId, foodId]
+      const updateResult = await pool.query(
+        `UPDATE users_fridge 
+         SET quantity = $1 
+         WHERE user_id = $2 AND (food_id = $3 OR barcode = $4)`,
+        [quantityWithUnit, userId, foodId, barcode]
       );
+  
+      if (updateResult.rowCount === 0) {
+        throw new Error('Aliment non trouvé dans le réfrigérateur de l\'utilisateur.');
+      }
+  
+      return { message: 'Quantité mise à jour avec succès.' };
     } catch (error) {
       console.error("Erreur lors de la mise à jour de la quantité de l'aliment :", error);
       throw error;

@@ -2,8 +2,9 @@
   <div class="add-ingredients-container">
     <div class="add-ingredients">
       <h4>Ajouter des ingrédients :</h4>
+
       <div class="input-container">
-        <input v-model="newIngredient" placeholder="Entrez un ingrédient" :disabled="isLoading" />
+        <input type="text" v-model="newIngredient" placeholder="Entrez un ingrédient ou un code-barre" :disabled="isLoading" />
         <input v-model="newQuantity" type="number" min="1" placeholder="Quantité" :disabled="isLoading"/>
         <select v-model="newUnit" :disabled="isLoading">
           <option value="">Unités (optionnel)</option>
@@ -43,7 +44,10 @@
             <input type="checkbox" v-model="item.selected" />
             <span>{{ item.name }}</span>
             <span>{{ (item.probability * 100).toFixed(2) }}%</span>
-            <input v-model="item.quantity" type="number" min="1" placeholder="Quantité" class="quantity-input" />
+            <input v-model="item.quantity" type="number" min="1" placeholder="Quantité" class="quantity-input" :class="{ 'error': item.selected && (!item.quantity || parseFloat(item.quantity) <= 0) }"/>
+            <div v-if="errorMessage" class="error-message">
+              {{ errorMessage }}
+            </div>
             <select v-model="item.unit" class="unit-select">
               <option value="">Unités (optionnel)</option>
               <option value="g">g</option>
@@ -113,7 +117,8 @@ export default {
       imageUrl: "",
       analysisResult: [],
       isLoading: false,
-      sortByCategory: false
+      sortByCategory: false,
+      errorMessage: ""
     };
   },
   computed: {
@@ -158,7 +163,7 @@ export default {
 
       try {
         this.isLoading = true;
-        const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/test`, formData, {
+        const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/analyzeImage`, formData, {
           headers: {
             "Content-Type": "multipart/form-data"
           }
@@ -182,17 +187,69 @@ export default {
         this.isLoading = false;
       }
     },
-    validateSelection() {
+    async validateSelection() {
       const selectedItems = this.analysisResult.filter(item => item.selected && item.quantity);
-      selectedItems.forEach(item => {
-        this.ingredients.push({
-          name: item.name,
-          quantity: `${item.quantity} ${item.unit}`.trim(),
-          category: 'ajoutés',
-          updateQuantity: 0
-        });
-      });
+
+      const invalidItems = selectedItems.filter(item => !item.quantity || parseFloat(item.quantity) <= 0);
+      if (invalidItems.length > 0) {
+        this.errorMessage = "Veuillez indiquer une quantité valide pour tous les ingrédients sélectionnés.";
+        return;
+      }
+
+      this.errorMessage = "";
+  
+      for (const item of selectedItems) {
+        const existingIngredientIndex = this.ingredients.findIndex(
+          ingredient => 
+            ingredient.name.toLowerCase() === item.name.toLowerCase() && ingredient.quantity.includes(item.unit)
+        );
+
+        if (existingIngredientIndex !== -1) {
+          const existingIngredient = this.ingredients[existingIngredientIndex];
+          const currentQuantityString = existingIngredient.quantity;
+          const quantityMatch = currentQuantityString.match(/^([\d.]+)\s*(.*)$/);
+
+          if (quantityMatch) {
+            const currentQuantity = parseFloat(quantityMatch[1]);
+            const currentUnit = quantityMatch[2];
+            const updatedQuantity = currentQuantity + parseFloat(item.quantity);
+
+            this.ingredients[existingIngredientIndex].quantity = `${updatedQuantity} ${currentUnit}`.trim();
+
+            try {
+              await axios.put(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/update`, {
+                foodName: item.name,
+                quantity: updatedQuantity,
+                unit: currentUnit
+              }, {
+                withCredentials: true
+              });
+            } catch (error) {
+              console.error(`Erreur lors de la mise à jour de ${item.name} dans la base de données :`, error);
+            }
+          }
+        } else {
+          this.ingredients.push({
+            name: item.name,
+            quantity: `${item.quantity} ${item.unit}`.trim(),
+            category: 'ajoutés',
+            updateQuantity: 0,
+          });
+          try {
+            await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/add`, {
+              foodName: item.name,
+              quantity: `${item.quantity} ${item.unit}`.trim(),
+            }, {
+              withCredentials: true
+            });
+          } catch (error) {
+            console.error(`Erreur lors de l'ajout de ${item.name} dans la base de données :`, error);
+          }
+        }
+      }
+
       this.analysisResult = [];
+      this.$emit("ingredients-updated", this.ingredients);
     },
     async fetchIngredientsFromFridge() {
       try {
@@ -213,34 +270,8 @@ export default {
       }
     },
     async addIngredient() {
-      const isBarcode = /^\d+$/.test(this.newIngredient.trim());
-      let ingredientName;
-
-      if (isBarcode) {
-        this.isLoading = true;
-        try {
-          const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${this.newIngredient}.json`);
-          const data = await response.json();
-          if (data && data.status === 1 && data.product && data.product.product_name) {
-            ingredientName = data.product.product_name;
-          } else {
-            alert("Produit non trouvé pour ce code-barres.");
-            return;
-          }
-        } catch (error) {
-          console.error("Erreur lors de la recherche du produit :", error);
-          alert("Une erreur est survenue lors de la recherche du produit.");
-          return;
-        } finally {
-          this.isLoading = false;
-        }
-      } else {
-        if (this.newIngredient.trim()) {
-          ingredientName = this.newIngredient.trim();
-        } else {
-          return;
-        }
-      }
+      const input = this.newIngredient.trim();
+      let ingredientName = input;
 
       if (ingredientName) {
         const existingIngredientIndex = this.ingredients.findIndex(
@@ -519,5 +550,14 @@ button:disabled {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.quantity-input.error {
+  border: 2px solid red;
+  background-color: #ffe6e6;
+}
+.error-message {
+  color: red;
+  font-weight: bold;
+  margin-top: 10px;
 }
 </style>

@@ -149,11 +149,21 @@
           <label>
             <input 
               type="checkbox" 
-              :value="ingredient" 
+              :value="ingredient.food_name" 
               v-model="selectedIngredients" 
             />
-            {{ ingredient.food_name }}
+            {{ ingredient.food_name }} (Max: {{ ingredient.maxQuantity }} {{ ingredient.unit }})
           </label>
+          <input
+            type="number"
+            v-model.number="ingredient.selectedQuantity"
+            :placeholder="'Quantité en ' + ingredient.unit"
+            :max="ingredient.maxQuantity"
+            :min="1"
+            :disabled="!selectedIngredients.includes(ingredient.food_name)"
+            @input="validateQuantity(ingredient)"
+            style="margin-left: 10px; width: 100px;"
+          />
         </li>
       </ul>
       <button @click="confirmSelection" class="confirm-btn">Confirmer</button>
@@ -225,6 +235,31 @@ export default {
     closeEditRecipe() {
       this.showEditRecipe = false;
     },
+    validateQuantity(ingredient) {
+      if (ingredient.selectedQuantity > ingredient.maxQuantity) {
+        ingredient.selectedQuantity = ingredient.maxQuantity;
+      } else if (ingredient.selectedQuantity < 1) {
+        ingredient.selectedQuantity = 1;
+      }
+    },
+    confirmSelection() {
+      this.selectedIngredientsWithQuantities = this.availableIngredients
+        .filter(ingredient => this.selectedIngredients.includes(ingredient.food_name))
+        .map(ingredient => ({
+          food_name: ingredient.food_name,
+          selectedQuantity: ingredient.selectedQuantity,
+          unit: ingredient.unit || "unité"
+        }));
+
+      if (this.selectedIngredientsWithQuantities.some(item => item.selectedQuantity <= 0)) {
+        alert("Veuillez spécifier une quantité valide pour chaque ingrédient sélectionné.");
+        return;
+      }
+
+      this.includeStock = true;
+      this.showStockModal = false;
+
+    },
     async handleEditRecipe(recipe) {
       try {
         const formData = new FormData();
@@ -281,7 +316,15 @@ export default {
           withCredentials: true
         });
         if (Array.isArray(response.data)) {
-          this.availableIngredients = response.data;
+          this.availableIngredients = response.data.map(ingredient => {
+            const quantityMatch = ingredient.quantity.match(/^(\d+\.?\d*)\s*(.*)?$/);
+            return {
+              ...ingredient,
+              maxQuantity: quantityMatch ? parseFloat(quantityMatch[1]) : 0,
+              unit: quantityMatch && quantityMatch[2] ? quantityMatch[2].trim() : '',
+              selectedQuantity: 1
+            };
+          });
         } else {
           console.error('Les données reçues ne sont pas valides :', response.data);
         }
@@ -298,10 +341,6 @@ export default {
       }
     },
     closeStockSelectionModal() {
-      this.showStockModal = false;
-    },
-    confirmSelection() {
-      this.includeStock = true;
       this.showStockModal = false;
     },
     handleStockModalResponse(response) {
@@ -335,7 +374,7 @@ export default {
           cuisine: this.selectedCuisine,
           people: this.selectedPeople,
           type: this.selectedType,
-          availableIngredients: this.includeStock ? this.selectedIngredients : []
+          availableIngredients: this.includeStock ? this.selectedIngredientsWithQuantities : []
         };
 
         const response = await axios.post(

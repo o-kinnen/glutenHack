@@ -21,6 +21,7 @@ const getRecipe = async (req, res) => {
 
     const { time, difficulty, cuisine, people, type, availableIngredients } = req.body;
 
+
     const restrictionsList = await userModel.getRestrictionsByUserId(userId);
 
     let content = `Donne-moi une recette en français ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui répond au critère suivants :
@@ -28,8 +29,8 @@ const getRecipe = async (req, res) => {
 
     if (availableIngredients && availableIngredients.length > 0) {
       const stockIngredients = availableIngredients
-        .map(ingredient => `${ingredient.food_name}`)
-        .join(', ');
+      .map(ingredient => `${ingredient.food_name} (${ingredient.selectedQuantity} ${ingredient.unit || ''})`)
+      .join(', ');
       content += ` Il faut qu'un maximum des ingrédients suivants soient utilisés : ${stockIngredients}.`;
     }
 

@@ -8,5 +8,6 @@ const upload = require('../middlewares/upload');
 router.post('/save', authMiddleware, upload.single('image'), openaiController.saveRecipe);
 router.get('/all', authMiddleware, recipeController.getAllRecipes);
 router.get('/user', authMiddleware, recipeController.getRecipesByUserId);
+router.delete('/:recipeId', authMiddleware, recipeController.deleteRecipe);
 
 module.exports = router;

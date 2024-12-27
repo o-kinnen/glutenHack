@@ -1,4 +1,7 @@
 const db = require('../utils/db');
+const fs = require('fs');
+const path = require('path');
+
 
 const getOrCreateFoodId = async (foodName) => {
     const client = await db.connect();
@@ -182,10 +185,61 @@ const getRecipesByUserId = async (user_id) => {
     client.release();
   }
 };
+
+const deleteRecipeById = async (recipeId, userId) => {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    const verifyQuery = `
+      SELECT image_url FROM recipes WHERE recipe_id = $1 AND user_id = $2;
+    `;
+    const verifyResult = await client.query(verifyQuery, [recipeId, userId]);
+    if (verifyResult.rows.length === 0) {
+      return false;
+    }
+
+    const imageUrl = verifyResult.rows[0].image_url;
+
+    const deleteIngredientsQuery = `
+      DELETE FROM recipes_ingredients WHERE recipe_id = $1;
+    `;
+    await client.query(deleteIngredientsQuery, [recipeId]);
+
+    const deleteRecipeQuery = `
+      DELETE FROM recipes WHERE recipe_id = $1;
+    `;
+    await client.query(deleteRecipeQuery, [recipeId]);
+
+    if (imageUrl) {
+      const filePath = path.join(__dirname, '../uploads', path.basename(imageUrl));
+    
+      if (fs.existsSync(filePath)) {
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error(`Erreur lors de la suppression de l'image : ${filePath}`, err);
+          }
+        });
+      } else {
+        console.warn(`Le fichier n'existe pas : ${filePath}`);
+      }
+    }
+    
+    await client.query('COMMIT');
+    return true;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Erreur lors de la suppression de la recette :', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
   
 module.exports = {
   saveRecipe,
   getOrCreateFoodId,
   getAllRecipes,
-  getRecipesByUserId
+  getRecipesByUserId,
+  deleteRecipeById
 };

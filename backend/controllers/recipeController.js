@@ -2,13 +2,15 @@ const { getAllRecipes } = require('../models/recipeModel');
 const { getRecipesByUserId } = require('../models/recipeModel');
 const { deleteRecipeById } = require('../models/recipeModel');
 const { updateRecipe } = require('../models/recipeModel');
+const favoritesModel = require('../models/recipeModel');
 const path = require('path');
 const fs = require('fs');
 
 
 exports.getAllRecipes = async (req, res) => {
+  const userId = req.user.user_id;
   try {
-    const recipes = await getAllRecipes();
+    const recipes = await getAllRecipes(userId);
     if (recipes.length === 0) {
       return res.status(404).json({ message: 'Aucune recette trouvée.' });
     }
@@ -145,4 +147,85 @@ exports.updateRecipe = async (req, res) => {
     res.status(500).json({ error: 'Erreur lors de la mise à jour de la recette.' });
   }
 };
+
+exports.addToFavorites = async (req, res) => {
+  const { recipeId } = req.body;
+  const userId = req.user.user_id;
+
+  if (!userId || !recipeId) {
+    return res.status(400).json({ message: 'Données invalides : userId ou recipeId manquant.' });
+  }
+
+  try {
+    const isAlreadyFavorite = await favoritesModel.isFavorite(userId, recipeId);
+    if (isAlreadyFavorite) {
+      return res.status(409).json({ message: 'Cette recette est déjà dans vos favoris.' });
+    }
+
+    await favoritesModel.addFavorite(userId, recipeId);
+    res.status(200).json({ message: 'Recette ajoutée aux favoris avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout aux favoris :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+exports.removeFromFavorites = async (req, res) => {
+  const { recipeId } = req.params;
+  const userId = req.user.user_id;
+
+  if (!userId || !recipeId) {
+    return res.status(400).json({ message: 'Données invalides : userId ou recipeId manquant.' });
+  }
+
+  try {
+    const isFavorite = await favoritesModel.isFavorite(userId, recipeId);
+    if (!isFavorite) {
+      return res.status(404).json({ message: 'Cette recette n\'est pas dans vos favoris.' });
+    }
+
+    await favoritesModel.removeFavorite(userId, recipeId);
+    res.status(200).json({ message: 'Recette retirée des favoris avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors du retrait des favoris :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+exports.checkFavorite = async (req, res) => {
+  const { recipeId } = req.params
+  const userId = req.user.user_id;
+
+  if (!userId || !recipeId) {
+    return res.status(400).json({ message: 'Données invalides.' });
+  }
+
+  try {
+    const isFavorite = await favoritesModel.isFavorite(userId, recipeId);
+    res.status(200).json({ isFavorite });
+  } catch (error) {
+    console.error('Erreur lors de la vérification des favoris :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+exports.getFavorites = async (req, res) => {
+  const userId = req.user.user_id;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Utilisateur non authentifié.' });
+  }
+
+  try {
+    const favorites = await favoritesModel.getFavoritesByUserId(userId);
+    res.status(200).json(favorites);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des favoris :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+
+
+
 

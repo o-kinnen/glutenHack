@@ -90,53 +90,55 @@ const saveRecipe = async (recipeData) => {
   };
   
 
-const getAllRecipes = async () => {
-  const client = await db.connect();
-  try {
-    const query = `
-      SELECT
-        r.recipe_id,
-        r.recipe_name,
-        r.instructions,
-        r.preparation_time,
-        r.difficulty,
-        r.cuisine_type,
-        r.number_of_person,
-        r.category_type,
-        r.created_at,
-        r.allergens_list,
-        r.created_by_ai,
-        r.public,
-        r.image_url,
-        json_agg(
-          json_build_object(
-            'food_id', ri.food_id,
-            'food_name', f.food_name,
-            'quantity', ri.quantity
-          )
-        ) AS ingredients
-      FROM recipes r
-      LEFT JOIN recipes_ingredients ri ON r.recipe_id = ri.recipe_id
-      LEFT JOIN foods f ON ri.food_id = f.food_id
-      WHERE r.public = true
-      GROUP BY r.recipe_id
-      ORDER BY r.created_at DESC;
-    `;
+  const getAllRecipes = async (userId) => {
+    const client = await db.connect();
+    try {
+      const query = `
+        SELECT
+          r.recipe_id,
+          r.recipe_name,
+          r.instructions,
+          r.preparation_time,
+          r.difficulty,
+          r.cuisine_type,
+          r.number_of_person,
+          r.category_type,
+          r.created_at,
+          r.allergens_list,
+          r.created_by_ai,
+          r.public,
+          r.image_url,
+          json_agg(
+            json_build_object(
+              'food_id', ri.food_id,
+              'food_name', f.food_name,
+              'quantity', ri.quantity
+            )
+          ) AS ingredients
+        FROM recipes r
+        LEFT JOIN recipes_ingredients ri ON r.recipe_id = ri.recipe_id
+        LEFT JOIN foods f ON ri.food_id = f.food_id
+        WHERE r.public = true AND r.user_id != $1 -- Exclure les recettes créées par l'utilisateur
+        GROUP BY r.recipe_id
+        ORDER BY r.created_at DESC;
+      `;
   
-    const result = await client.query(query);
+      const result = await client.query(query, [userId]);
   
-    if (result.rows.length === 0) {
-      return [];
+      if (result.rows.length === 0) {
+        return [];
+      }
+  
+      return result.rows;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des recettes :', error);
+      throw error;
+    } finally {
+      client.release();
     }
+  };
   
-    return result.rows;
-  } catch (error) {
-    console.error('Erreur lors de la récupération des recettes :', error);
-    throw error;
-  } finally {
-    client.release();
-  }
-};
+  
 
 const getRecipesByUserId = async (user_id) => {
   const client = await db.connect();
@@ -200,6 +202,11 @@ const deleteRecipeById = async (recipeId, userId) => {
     }
 
     const imageUrl = verifyResult.rows[0].image_url;
+
+    const deleteFavoritesQuery = `
+      DELETE FROM favorites WHERE recipe_id = $1;
+    `;
+    await client.query(deleteFavoritesQuery, [recipeId]);
 
     const deleteIngredientsQuery = `
       DELETE FROM recipes_ingredients WHERE recipe_id = $1;
@@ -310,12 +317,62 @@ const updateRecipe = async (recipeData) => {
     client.release();
   }
 };
-  
+
+const addFavorite = async (userId, recipeId) => {
+  try {
+    await db.query(
+      'INSERT INTO favorites (user_id, recipe_id) VALUES ($1, $2)',
+      [userId, recipeId]
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const isFavorite = async (userId, recipeId) => {
+  try {
+    const result = await db.query(
+      'SELECT * FROM favorites WHERE user_id = $1 AND recipe_id = $2',
+      [userId, recipeId]
+    );
+    return result.rowCount > 0;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const removeFavorite = async (userId, recipeId) => {
+  try {
+    await db.query(
+      'DELETE FROM favorites WHERE user_id = $1 AND recipe_id = $2',
+      [userId, recipeId]
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getFavoritesByUserId = async (userId) => {
+  try {
+    const result = await db.query(
+      'SELECT recipe_id FROM favorites WHERE user_id = $1',
+      [userId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   saveRecipe,
   getOrCreateFoodId,
   getAllRecipes,
   getRecipesByUserId,
   deleteRecipeById,
-  updateRecipe
+  updateRecipe,
+  addFavorite,
+  isFavorite,
+  removeFavorite,
+  getFavoritesByUserId
 };

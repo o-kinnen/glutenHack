@@ -1,14 +1,25 @@
 <template>
   <div class="recipe-page">
     <h2>Toutes les recettes</h2>
+    <div>
+      <button @click="toggleFavorites">
+        {{ showFavorites ? 'Afficher toutes les recettes' : 'Afficher mes favoris' }}
+      </button>
+    </div>
+    <div v-if="filteredRecipes.length === 0" class="no-recipes">
+      <p>Aucune recette trouvée dans les favoris.</p>
+    </div>
     <div v-if="recipes.length === 0" class="no-recipes">
       <p>Aucune recette n'a été enregistrée pour le moment.</p>
     </div>
     <div v-else class="recipes-list">
-      <div v-for="(recipe, index) in recipes" :key="recipe.recipe_id" class="recipe-card">
+      <div v-for="recipe in filteredRecipes" :key="recipe.recipe_id" class="recipe-card">
         <h3>{{ recipe.recipe_name }}</h3>
+        <div class="favorite-icon" v-if="recipe.isFavorite">
+          <i class="bi bi-heart-fill" style="color: red;"></i>
+        </div>
         <img v-if="recipe.image_url" :src="recipe.image_url" alt="Image de la recette" class="modal-recipe-image" />
-        <button @click="openModal(index)">Voir les détails</button>
+        <button @click="openModal(recipe)">Voir les détails</button>
         <div v-if="getMissingAllergens(recipe).length > 0" class="attention-warning">
           <i class="bi bi-exclamation-triangle-fill"></i>
           <p>
@@ -50,6 +61,10 @@
             {{ step }}
           </li>
         </ol>
+        <div>
+          <button v-if="!isFavorite" @click="addToFavorites">Ajouter aux favoris</button>
+          <button v-else @click="removeFromFavorites">Retirer des favoris</button>
+        </div>
         <button @click="addToShoppingList">Ajouter à la liste des courses</button>
         <button @click="closeModal">Fermer</button>
       </div>
@@ -65,9 +80,12 @@ export default {
     return {
       recipes: [],
       userAllergens: [],
+      filteredRecipes: [],
       showModal: false,
       currentRecipe: null,
-      errorMessage: ''
+      errorMessage: '',
+      isFavorite: false,
+      showFavorites: false,
     };
   },
   computed: {
@@ -76,21 +94,112 @@ export default {
     },
   },
   methods: {
+    toggleFavorites() {
+      this.showFavorites = !this.showFavorites;
+      this.filterRecipes();
+    },
+    filterRecipes() {
+      if (this.showFavorites) {
+        this.filteredRecipes = this.recipes.filter(recipe => recipe.isFavorite);
+      } else {
+        this.filteredRecipes = this.recipes;
+      }
+    },
     async fetchRecipes() {
       try {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/all`, {
           withCredentials: true ,
         });
-        this.recipes = response.data;
-        this.errorMessage = '';
+        const favoritesResponse = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/favorites`, {
+          withCredentials: true,
+        });
+        const favoriteIds = favoritesResponse.data.map(fav => fav.recipe_id);
+
+        this.recipes = response.data.map(recipe => ({
+          ...recipe,
+          isFavorite: favoriteIds.includes(recipe.recipe_id),
+        }));
+
+        this.filterRecipes();
       } catch (error) {
         console.error('Erreur lors de la récupération des recettes :', error);
         this.errorMessage = 'Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.';
       }
     },
+    async addToFavorites() {
+      try {
+        if (!this.currentRecipe?.recipe_id) {
+          throw new Error("Aucune recette sélectionnée pour ajouter aux favoris.");
+        }
+
+        const response = await axios.post(
+          `${process.env.VUE_APP_URL_BACKEND}/recipes/favorites/add`,
+          {
+            recipeId: this.currentRecipe.recipe_id,
+          },
+          { withCredentials: true }
+        );
+        alert(response.data.message || 'Recette ajoutée aux favoris avec succès.');
+
+        this.isFavorite = true;
+        this.currentRecipe.isFavorite = true;
+
+        const recipeIndex = this.recipes.findIndex(r => r.recipe_id === this.currentRecipe.recipe_id);
+        if (recipeIndex !== -1) {
+          this.recipes[recipeIndex].isFavorite = true;
+        }
+
+        this.filterRecipes();
+
+      } catch (error) {
+        if (error.response && error.response.status === 409) {
+          alert('Cette recette est déjà dans vos favoris.');
+        } else {
+          console.error("Erreur lors de l'ajout aux favoris :", error);
+          alert("Une erreur est survenue lors de l'ajout aux favoris.");
+        }
+      }
+    },
+    async checkIfFavorite(recipeId) {
+      try {
+        const response = await axios.get(
+          `${process.env.VUE_APP_URL_BACKEND}/recipes/favorites/check/${recipeId}`,
+          { withCredentials: true }
+        );
+        this.isFavorite = response.data.isFavorite;
+      } catch (error) {
+        console.error("Erreur lors de la vérification du statut des favoris :", error);
+        this.isFavorite = false;
+      }
+    },
+    async removeFromFavorites() {
+      try {
+        if (!this.currentRecipe?.recipe_id) {
+          throw new Error("Aucune recette sélectionnée pour retirer des favoris.");
+        }
+        const response = await axios.delete(
+          `${process.env.VUE_APP_URL_BACKEND}/recipes/favorites/remove/${this.currentRecipe.recipe_id}`,
+          { withCredentials: true }
+        );
+        alert(response.data.message || 'Recette retirée des favoris avec succès.');
+
+        this.isFavorite = false;
+        this.currentRecipe.isFavorite = false;
+
+        const recipeIndex = this.recipes.findIndex(r => r.recipe_id === this.currentRecipe.recipe_id);
+
+        if (recipeIndex !== -1) {
+          this.recipes[recipeIndex].isFavorite = false;
+        }
+
+        this.filterRecipes();
+      } catch (error) {
+        console.error("Erreur lors du retrait des favoris :", error);
+        alert("Une erreur est survenue lors du retrait des favoris.");
+      }
+    }, 
     async loadUserAllergens() {
       this.userAllergens = await this.fetchUserAllergens();
-      console.log(this.userAllergens)
     },
     async fetchUserAllergens() {
       try {
@@ -125,9 +234,13 @@ export default {
         alert('Une erreur est survenue.');
       }
     },
-    openModal(index) {
-      this.currentRecipe = this.recipes[index];
+    async openModal(recipe) {
+      this.currentRecipe = recipe;
       this.showModal = true;
+
+      if (this.currentRecipe?.recipe_id) {
+        await this.checkIfFavorite(this.currentRecipe.recipe_id);
+      }
     },
     closeModal() {
       this.showModal = false;
@@ -259,5 +372,13 @@ button:hover {
 .attention-warning p {
   font-size: 0.9em;
   margin: 0;
+}
+.favorite-icon {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 20px;
+}
+.favorite-icon i {
+  color: red;
 }
 </style>

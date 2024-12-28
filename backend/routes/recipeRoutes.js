@@ -10,6 +10,11 @@ router.get('/all', authMiddleware, recipeController.getAllRecipes);
 router.get('/user', authMiddleware, recipeController.getRecipesByUserId);
 router.delete('/:recipeId', authMiddleware, recipeController.deleteRecipe);
 router.put('/update/:recipeId',authMiddleware, upload.single('image'), recipeController.updateRecipe);
+router.post('/favorites/add', authMiddleware, recipeController.addToFavorites);
+router.delete('/favorites/remove/:recipeId', authMiddleware, recipeController.removeFromFavorites);
+router.get('/favorites/check/:recipeId', authMiddleware, recipeController.checkFavorite);
+router.get('/favorites', authMiddleware, recipeController.getFavorites);
+
 
 
 module.exports = router;

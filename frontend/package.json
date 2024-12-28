@@ -13,6 +13,7 @@
     "@vee-validate/rules": "^4.14.6",
     "axios": "^1.7.7",
     "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
     "core-js": "^3.8.3",
     "register-service-worker": "^1.7.2",
     "vee-validate": "^4.14.6",

@@ -9,6 +9,13 @@
         <h3>{{ recipe.recipe_name }}</h3>
         <img v-if="recipe.image_url" :src="recipe.image_url" alt="Image de la recette" class="modal-recipe-image" />
         <button @click="openModal(index)">Voir les détails</button>
+        <div v-if="getMissingAllergens(recipe).length > 0" class="attention-warning">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <p>
+            Ces allergènes ne sont pas pris en compte dans cette recette :
+            <strong>{{ getMissingAllergens(recipe).join(', ') }}</strong>.
+          </p>
+        </div>
       </div>
     </div>
     <div v-if="showModal" class="modal-overlay">
@@ -69,6 +76,7 @@ export default {
   data() {
     return {
       recipes: [],
+      userAllergens: [],
       showModal: false,
       showEditModal: false,
       currentRecipe: null,
@@ -104,6 +112,28 @@ export default {
         console.error('Erreur lors de la récupération des recettes utilisateur :', error);
         this.errorMessage = 'Une erreur est survenue lors de la récupération de vos recettes. Veuillez réessayer plus tard.';
       }
+    },
+    async loadUserAllergens() {
+      this.userAllergens = await this.fetchUserAllergens();
+      console.log(this.userAllergens)
+    },
+    async fetchUserAllergens() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
+        withCredentials: true
+      });
+
+      return response.data.restrictions || [];
+      } catch (error) {
+        console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
+        alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
+        return [];
+      }
+    },
+    getMissingAllergens(recipe) {
+      if (!this.userAllergens.length) return [];
+      if (!recipe.allergens_list) return [...this.userAllergens];
+      return this.userAllergens.filter((allergen) => !recipe.allergens_list.includes(allergen));
     },
     async addToShoppingList() {
       try {
@@ -216,6 +246,7 @@ export default {
   },
   mounted() {
     this.fetchUserRecipes();
+    this.loadUserAllergens();
   },
 };
 </script>
@@ -324,6 +355,20 @@ button:hover {
   border-radius: 10px;
   margin-bottom: 20px;
   object-fit: contain;
+}
+.attention-warning {
+  margin-top: 10px;
+  color: red;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.attention-warning i {
+  font-size: 20px;
+}
+.attention-warning p {
+  font-size: 0.9em;
+  margin: 0;
 }
 </style>
 

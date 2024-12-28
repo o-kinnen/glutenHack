@@ -22,7 +22,7 @@ const getOrCreateFoodId = async (foodName) => {
     } finally {
       client.release();
     }
-  };
+};
   
 const saveRecipe = async (recipeData) => {
     const {
@@ -68,7 +68,7 @@ const saveRecipe = async (recipeData) => {
       const recipeId = recipeResult.rows[0].recipe_id;
   
       for (const ingredient of ingredients) {
-        const foodId = await getOrCreateFoodId(ingredient.name);
+        const foodId = await getOrCreateFoodId(ingredient.food_name);
   
         const ingredientQuery = `
           INSERT INTO recipes_ingredients (recipe_id, food_id, quantity)
@@ -235,11 +235,87 @@ const deleteRecipeById = async (recipeId, userId) => {
     client.release();
   }
 };
+
+const updateRecipe = async (recipeData) => {
+  const {
+    recipe_id,
+    recipe_name,
+    preparation_time,
+    difficulty,
+    number_of_person,
+    cuisine_type,
+    category_type,
+    public: isPublic,
+    allergens_list,
+    instructions,
+    ingredients,
+    image_url,
+  } = recipeData;
+
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const updateRecipeQuery = `
+      UPDATE recipes
+      SET recipe_name = $1,
+          preparation_time = $2,
+          difficulty = $3,
+          number_of_person = $4,
+          cuisine_type = $5,
+          category_type = $6,
+          public = $7,
+          allergens_list = $8,
+          instructions = $9,
+          created_by_ai = false
+          ${image_url ? ', image_url = $10' : ''}
+      WHERE recipe_id = ${image_url ? '$11' : '$10'};
+    `;
+    
+    const updateRecipeValues = [
+      recipe_name,
+      preparation_time,
+      difficulty,
+      number_of_person,
+      cuisine_type,
+      category_type,
+      isPublic,
+      allergens_list,
+      instructions,
+      ...(image_url ? [image_url, recipe_id] : [recipe_id]),
+    ];
+
+    await client.query(updateRecipeQuery, updateRecipeValues);
+
+    const deleteIngredientsQuery = `DELETE FROM recipes_ingredients WHERE recipe_id = $1;`;
+    await client.query(deleteIngredientsQuery, [recipe_id]);
+
+    for (const ingredient of ingredients) {
+      const foodId = await getOrCreateFoodId(ingredient.food_name);
+      const insertIngredientQuery = `
+        INSERT INTO recipes_ingredients (recipe_id, food_id, quantity)
+        VALUES ($1, $2, $3);
+      `;
+      const insertIngredientValues = [recipe_id, foodId, ingredient.quantity || 'N/A'];
+      await client.query(insertIngredientQuery, insertIngredientValues);
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Erreur lors de la mise à jour de la recette :', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
   
 module.exports = {
   saveRecipe,
   getOrCreateFoodId,
   getAllRecipes,
   getRecipesByUserId,
-  deleteRecipeById
+  deleteRecipeById,
+  updateRecipe
 };

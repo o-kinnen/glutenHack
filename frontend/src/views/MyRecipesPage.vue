@@ -44,30 +44,54 @@
           </li>
         </ol>
         <button @click="addToShoppingList">Ajouter à la liste des courses</button>
+        <button @click="openEditModal">Modifier</button>
         <button @click="confirmDeleteRecipe">Supprimer</button>
         <button @click="closeModal">Fermer</button>
       </div>
     </div>
+    <EditRecipe
+      v-if="showEditModal"
+      mode="edit"
+      :isVisible="showEditModal"
+      @close="closeEditModal"
+      @update-recipe="handleUpdateRecipe"
+      :recipe="currentRecipe"
+    />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import EditRecipe from '@/components/EditRecipe.vue';
 export default {
   name: 'MyRecipesPage',
+  components: { EditRecipe },
   data() {
     return {
       recipes: [],
       showModal: false,
+      showEditModal: false,
       currentRecipe: null,
       errorMessage: ''
     };
   },
   computed: {
     formattedInstructionsArray() {
-      return this.currentRecipe?.instructions ? this.currentRecipe.instructions.split('\n').filter((step) => step.trim() !== '') : [];
-    },
+    if (!this.currentRecipe?.instructions) {
+      return [];
+    }
+    if (typeof this.currentRecipe.instructions === "string") {
+      return this.currentRecipe.instructions
+        .split("\n")
+        .filter((step) => step.trim() !== "");
+    } else if (Array.isArray(this.currentRecipe.instructions)) {
+      return this.currentRecipe.instructions.map((stepObj) =>
+        typeof stepObj === "object" ? stepObj.step : stepObj
+      );
+    }
+    return [];
   },
+},
   methods: {
     async fetchUserRecipes() {
       try {
@@ -109,6 +133,58 @@ export default {
         alert('Une erreur est survenue lors de la suppression.');
       }
     },
+    async handleUpdateRecipe(updatedRecipe) {
+      try {
+        const formData = new FormData();
+        formData.append('title', updatedRecipe.recipe_name);
+        formData.append('time', updatedRecipe.preparation_time);
+        formData.append('difficulty', updatedRecipe.difficulty);
+        formData.append('people', updatedRecipe.number_of_person);
+        formData.append('cuisine', updatedRecipe.cuisine_type);
+        formData.append('type', updatedRecipe.category_type);
+        formData.append('public', updatedRecipe.public);
+        formData.append('ingredients', JSON.stringify(updatedRecipe.ingredients));
+        formData.append('instructions', JSON.stringify(updatedRecipe.instructions));
+        formData.append('restrictionsList', JSON.stringify(updatedRecipe.allergens_list));
+        if (updatedRecipe.image) {
+          formData.append('image', updatedRecipe.image);
+        }
+
+        const response = await axios.put(
+          `${process.env.VUE_APP_URL_BACKEND}/recipes/update/${updatedRecipe.recipe_id}`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            withCredentials: true,
+          }
+        );
+
+        if (response.status === 200) {
+          alert('Recette mise à jour avec succès');
+          updatedRecipe.image_url = response.data.updatedRecipe.image_url;
+
+          this.updateRecipe(updatedRecipe);
+          this.currentRecipe = { ...this.currentRecipe, ...updatedRecipe };
+
+          this.updateRecipe(updatedRecipe);
+          this.currentRecipe = {
+            ...updatedRecipe,
+            instructions: Array.isArray(updatedRecipe.instructions)
+            ? updatedRecipe.instructions.map((step) =>
+              typeof step === "object" ? step.step : step
+            ).join("\n")
+            : updatedRecipe.instructions,
+          };
+        }
+        this.closeEditModal();
+    
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour de la recette :", error);
+        alert("Une erreur est survenue lors de la mise à jour de la recette.");
+      }
+    },       
     confirmDeleteRecipe() {
       if (confirm('Êtes-vous sûr de vouloir supprimer cette recette ? Cette action est irréversible.')) {
         this.deleteRecipe();
@@ -121,7 +197,22 @@ export default {
     closeModal() {
       this.showModal = false;
       this.currentRecipe = null;
-    }
+    },
+    openEditModal() {
+    this.showEditModal = true;
+    },
+    closeEditModal() {
+    this.showEditModal = false;
+    },
+    updateRecipe(updatedRecipe) {
+      const index = this.recipes.findIndex(recipe => recipe.recipe_id === updatedRecipe.recipe_id);
+      if (index !== -1) {
+        const existingRecipe = this.recipes[index];
+        updatedRecipe.image_url = updatedRecipe.image_url || existingRecipe.image_url;
+        this.recipes[index] = { ...existingRecipe, ...updatedRecipe };
+      }
+      this.closeEditModal();
+    },
   },
   mounted() {
     this.fetchUserRecipes();

@@ -1,6 +1,10 @@
 const { getAllRecipes } = require('../models/recipeModel');
 const { getRecipesByUserId } = require('../models/recipeModel');
 const { deleteRecipeById } = require('../models/recipeModel');
+const { updateRecipe } = require('../models/recipeModel');
+const path = require('path');
+const fs = require('fs');
+
 
 exports.getAllRecipes = async (req, res) => {
   try {
@@ -43,3 +47,102 @@ exports.deleteRecipe = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur lors de la suppression de la recette.' });
   }
 };
+
+exports.updateRecipe = async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const userId = req.user.user_id;
+
+    const {
+      title,
+      time,
+      difficulty,
+      people,
+      cuisine,
+      type,
+      public: isPublic,
+      restrictionsList,
+      ingredients,
+      instructions
+    } = req.body;
+
+    let parsedIngredients = [];
+    let parsedRestrictions = [];
+    let parsedInstructions = [];
+
+    try {
+      parsedIngredients = JSON.parse(ingredients);
+      parsedRestrictions = JSON.parse(restrictionsList);
+
+      const rawInstructions = JSON.parse(instructions);
+      if (Array.isArray(rawInstructions)) {
+        parsedInstructions = rawInstructions.map((inst) => inst.step);
+      } else {
+        throw new Error('Les instructions ne sont pas un tableau valide.');
+      }
+    } catch (error) {
+      console.error('Erreur de parsing des champs JSON :', error);
+      return res.status(400).json({ error: 'Erreur de parsing des champs JSON.' });
+    }
+
+    const imageUrl = req.file
+      ? `${process.env.URL_BACKEND}/uploads/${req.file.filename}`
+      : null;
+
+     const existingRecipe = await getRecipesByUserId(userId);
+
+    if (!existingRecipe) {
+      return res.status(404).json({ error: 'Recette non trouvée.' });
+    }
+    const recipeToUpdate = existingRecipe.find(recipe => recipe.recipe_id === parseInt(recipeId));
+
+    if (!recipeToUpdate) {
+      return res.status(404).json({ error: 'Recette non trouvée.' });
+    }
+    
+    if (imageUrl && recipeToUpdate.image_url) {
+      const oldImagePath = path.join(__dirname, '../uploads', path.basename(recipeToUpdate.image_url));
+
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlink(oldImagePath, (err) => {
+          if (err) {
+            console.error(`Erreur lors de la suppression de l'ancienne image : ${err.message}`);
+          }
+        });
+      } else {
+        console.warn('Le fichier de l\'ancienne image n\'existe pas :', oldImagePath);
+      }
+    }
+
+    const formattedInstructions = parsedInstructions.join('\n');
+
+    const updatedRecipeData = {
+      recipe_id: recipeId,
+      recipe_name: title,
+      preparation_time: time,
+      difficulty,
+      number_of_person: people,
+      cuisine_type: cuisine,
+      category_type: type,
+      public: isPublic,
+      allergens_list: parsedRestrictions,
+      instructions: formattedInstructions,
+      ingredients: parsedIngredients,
+      image_url: imageUrl || existingRecipe.image_url,
+    };
+
+    await updateRecipe(updatedRecipeData);
+
+    res.status(200).json({ 
+      message: 'Recette mise à jour avec succès.', 
+      updatedRecipe: { 
+        ...updatedRecipeData,
+        image_url: updatedRecipeData.image_url || existingRecipe.image_url
+      } 
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la recette :', error);
+    res.status(500).json({ error: 'Erreur lors de la mise à jour de la recette.' });
+  }
+};
+

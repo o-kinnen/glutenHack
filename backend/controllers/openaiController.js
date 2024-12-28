@@ -174,13 +174,14 @@ const saveRecipe = async (req, res) => {
         parsedIngredients = JSON.parse(ingredients);
         parsedInstructions = JSON.parse(instructions);
         parsedRestrictions = JSON.parse(restrictionsList);
+
       } catch (err) {
         console.error('Erreur de parsing des valeurs JSON :', err);
         return res.status(400).json({ error: 'Erreur de parsing des valeurs JSON' });
       }
     } else {
       parsedIngredients = ingredients.map((ingredient, index) => ({
-        name: ingredient,
+        food_name: ingredient,
         quantity: quantity[index] || 'N/A',
       }));
       parsedInstructions = instructions;

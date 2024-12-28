@@ -9,5 +9,7 @@ router.post('/save', authMiddleware, upload.single('image'), openaiController.sa
 router.get('/all', authMiddleware, recipeController.getAllRecipes);
 router.get('/user', authMiddleware, recipeController.getRecipesByUserId);
 router.delete('/:recipeId', authMiddleware, recipeController.deleteRecipe);
+router.put('/update/:recipeId',authMiddleware, upload.single('image'), recipeController.updateRecipe);
+
 
 module.exports = router;

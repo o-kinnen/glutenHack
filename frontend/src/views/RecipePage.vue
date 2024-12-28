@@ -8,6 +8,7 @@
     </button>
     <EditRecipe
       :isVisible="showEditRecipe"
+      mode="create"
       @close="closeEditRecipe"
       @create-recipe="handleEditRecipe"
     />
@@ -263,17 +264,17 @@ export default {
     async handleEditRecipe(recipe) {
       try {
         const formData = new FormData();
-        formData.append('title', recipe.title);
-        formData.append('time', recipe.time);
+        formData.append('title', recipe.recipe_name);
+        formData.append('time', recipe.preparation_time);
         formData.append('difficulty', recipe.difficulty);
-        formData.append('people', recipe.people);
-        formData.append('cuisine', recipe.cuisine);
-        formData.append('type', recipe.type);
+        formData.append('people', recipe.number_of_person);
+        formData.append('cuisine', recipe.cuisine_type);
+        formData.append('type', recipe.category_type);
         formData.append('public', recipe.public);
         formData.append('ingredients', JSON.stringify(recipe.ingredients));
         formData.append('instructions', JSON.stringify(recipe.instructions));
-        formData.append('restrictionsList', JSON.stringify(recipe.restrictionsList));
-        formData.append('created_by_ai', recipe.created_by_ai);
+        formData.append('restrictionsList', JSON.stringify(recipe.allergens_list));
+        formData.append('created_by_ai', false);
         if (recipe.image) {
           formData.append('image', recipe.image);
         }
@@ -652,7 +653,6 @@ button:hover {
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 1000;
 }
-
 .confirm-btn {
   background-color: #4caf50;
   color: white;

@@ -1,13 +1,36 @@
 <template>
   <div class="my-recipes-page">
     <h2>Mes recettes</h2>
+    <div class="allergen-filters">
+      <label>
+        <input type="checkbox" value="Gluten" v-model="selectedAllergens" />
+        Sans Gluten
+      </label>
+      <label>
+        <input type="checkbox" value="Lactose" v-model="selectedAllergens" />
+        Sans Lactose
+      </label>
+      <label>
+        <input type="checkbox" value="Oeuf" v-model="selectedAllergens" />
+        Sans Oeuf
+      </label>
+      <label>
+        <input type="checkbox" value="Arachide" v-model="selectedAllergens" />
+        Sans Arachide
+      </label>
+      <label>
+        <input type="checkbox" v-model="showProfileFilter" @change="filterRecipes" />
+        Mon profil
+      </label>
+    </div>
+    <p v-if="showProfileFilter && userAllergens.length === 0" style="text-align: center;">
+      Seules les recettes sans mention d'allergènes sont affichées car vous n'avez
+      spécifié aucun allergène dans votre profil.
+    </p>
     <div>
       <button @click="toggleFavorites">
         {{ showFavorites ? 'Afficher toutes les recettes' : 'Afficher mes favoris' }}
       </button>
-    </div>
-    <div v-if="filteredRecipes.length === 0" class="no-recipes">
-      <p>Aucune recette trouvée dans les favoris.</p>
     </div>
     <div v-if="recipes.length === 0" class="no-recipes">
       <p>Aucune recette n'a été enregistrée pour le moment.</p>
@@ -88,7 +111,7 @@
         </div>
         <button @click="addToShoppingList">Ajouter à la liste des courses</button>
         <button @click="openEditModal">Modifier</button>
-        <button @click="generatePDF">Partager en PDF</button>
+        <button @click="generatePDF">Exporter en PDF</button>
         <button @click="confirmDeleteRecipe">Supprimer</button>
         <button @click="closeModal">Fermer</button>
       </div>
@@ -116,8 +139,10 @@ export default {
       recipes: [],
       userAllergens: [],
       filteredRecipes: [],
+      selectedAllergens: [],
       showModal: false,
       showEditModal: false,
+      showProfileFilter: false,
       currentRecipe: null,
       errorMessage: '',
       isFavorite: false,
@@ -147,11 +172,23 @@ export default {
       this.filterRecipes();
     },
     filterRecipes() {
-      if (this.showFavorites) {
-        this.filteredRecipes = this.recipes.filter(recipe => recipe.isFavorite);
-      } else {
-        this.filteredRecipes = this.recipes;
-      }
+      this.filteredRecipes = this.recipes.filter((recipe) => {
+      const matchesFavorites = this.showFavorites ? recipe.isFavorite : true;
+
+      const matchesAllergens = this.selectedAllergens.every(
+        (allergen) => recipe.allergens_list?.includes(allergen)
+      );
+
+      const matchesProfile = this.showProfileFilter
+          ? this.userAllergens.length === 0
+          ? !recipe.allergens_list || recipe.allergens_list.length === 0
+          : this.userAllergens.every((allergen) =>
+              recipe.allergens_list?.includes(allergen)
+            )
+        : true;
+
+        return matchesFavorites && matchesAllergens && matchesProfile;
+      });
     },
     async convertImageToBase64(url) {
       return new Promise((resolve, reject) => {
@@ -497,6 +534,15 @@ export default {
     this.fetchUserRecipes();
     this.loadUserAllergens();
   },
+  watch: {
+    selectedAllergens: {
+      handler() {
+        this.filterRecipes();
+      },
+      deep: true,
+    },
+    showFavorites: "filterRecipes",
+  },
 };
 </script>
 
@@ -660,6 +706,23 @@ button:hover {
 }
 .average-rating .star.filled {
   color: #f39c12;
+}
+.allergen-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.allergen-filters label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1em;
+  cursor: pointer;
+}
+.allergen-filters input[type="checkbox"] {
+  margin-right: 5px;
 }
 </style>
 

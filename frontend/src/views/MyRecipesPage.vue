@@ -88,6 +88,7 @@
         </div>
         <button @click="addToShoppingList">Ajouter à la liste des courses</button>
         <button @click="openEditModal">Modifier</button>
+        <button @click="generatePDF">Partager en PDF</button>
         <button @click="confirmDeleteRecipe">Supprimer</button>
         <button @click="closeModal">Fermer</button>
       </div>
@@ -106,6 +107,7 @@
 <script>
 import axios from 'axios';
 import EditRecipe from '@/components/EditRecipe.vue';
+import { jsPDF } from "jspdf";
 export default {
   name: 'MyRecipesPage',
   components: { EditRecipe },
@@ -150,6 +152,86 @@ export default {
       } else {
         this.filteredRecipes = this.recipes;
       }
+    },
+    async convertImageToBase64(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.onerror = (error) => reject(error);
+        img.src = url;
+      });
+    },
+    async generatePDF() {
+      if (!this.currentRecipe) {
+        alert("Aucune recette sélectionnée pour générer le PDF.");
+        return;
+      }
+
+      const doc = new jsPDF();
+      let currentY = 10;
+
+      doc.setFontSize(20);
+      doc.text(this.currentRecipe.recipe_name, 10, currentY);
+      currentY += 10;
+
+      doc.setFontSize(12);
+      doc.text(`Temps de préparation: ${this.currentRecipe.preparation_time}`, 10, currentY);
+      currentY += 10;
+      doc.text(`Difficulté: ${this.currentRecipe.difficulty}`, 10, currentY);
+      currentY += 10;
+      doc.text(`Nombre de personnes: ${this.currentRecipe.number_of_person}`, 10, currentY);
+      currentY += 10;
+      doc.text(`Cuisine: ${this.currentRecipe.cuisine_type}`, 10, currentY);
+      currentY += 10;
+      doc.text(`Type: ${this.currentRecipe.category_type}`, 10, currentY);
+      currentY += 10;
+
+      const allergens = this.currentRecipe.allergens_list?.length
+        ? this.currentRecipe.allergens_list.join(", ")
+        : "Aucun allergène spécifié.";
+      doc.text(`Sans allergène: ${allergens}`, 10, currentY);
+      currentY += 10;
+
+      if (this.currentRecipe.image_url) {
+        try {
+          const imageBase64 = await this.convertImageToBase64(this.currentRecipe.image_url);
+          doc.addImage(imageBase64, "PNG", 10, currentY, 80, 80);
+          currentY += 90;
+        } catch (error) {
+          console.error("Erreur lors du chargement de l'image :", error);
+        }
+      }
+
+      doc.setFontSize(14);
+      doc.text("Ingrédients:", 10, currentY);
+      currentY += 10;
+      doc.setFontSize(12);
+      this.currentRecipe.ingredients.forEach((ingredient) => {
+        doc.text(`${ingredient.quantity} ${ingredient.food_name}`, 10, currentY);
+        currentY += 10;
+      });
+
+      doc.setFontSize(14);
+      doc.text("Instructions:", 10, currentY);
+      currentY += 10;
+      doc.setFontSize(12);
+
+      const lineHeight = 10;
+      this.formattedInstructionsArray.forEach((step, index) => {
+        const textLines = doc.splitTextToSize(`${index + 1}. ${step}`, 190);
+        doc.text(textLines, 10, currentY);
+        currentY += textLines.length * lineHeight;
+      });
+
+      doc.save(`${this.currentRecipe.recipe_name}.pdf`);
     },
     async rateRecipe(star) {
       try {

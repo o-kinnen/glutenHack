@@ -14,7 +14,8 @@ router.post('/favorites/add', authMiddleware, recipeController.addToFavorites);
 router.delete('/favorites/remove/:recipeId', authMiddleware, recipeController.removeFromFavorites);
 router.get('/favorites/check/:recipeId', authMiddleware, recipeController.checkFavorite);
 router.get('/favorites', authMiddleware, recipeController.getFavorites);
-
-
+router.post('/rate', authMiddleware, recipeController.addOrUpdateRate);
+router.get('/rate/average/:recipeId', authMiddleware, recipeController.getAverageRating);
+router.get('/rate/:recipeId', authMiddleware, recipeController.getRateByRecipe);
 
 module.exports = router;

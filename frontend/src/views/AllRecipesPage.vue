@@ -61,6 +61,27 @@
             {{ step }}
           </li>
         </ol>
+        <p style="text-align: center;" v-if="currentRecipe.averageRating === 0">Cette recette n'a pas encore été notée.</p>
+        <p style="text-align: center;" v-else>Voici la note reçue de la recette.</p>
+        <div class="average-rating">
+          <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= currentRecipe.averageRating }">
+          ★
+          </span>
+        </div>
+        <div class="rating-container">
+          <p style="text-align: center;">Noter la recette ?</p>
+          <div class="stars">
+            <span 
+            v-for="star in 5" 
+            :key="star" 
+            class="star" 
+            :class="{ filled: star <= currentRecipe.rating }"
+            @click="rateRecipe(star)"
+            >
+            ★
+            </span>
+          </div>
+        </div>
         <div>
           <button v-if="!isFavorite" @click="addToFavorites">Ajouter aux favoris</button>
           <button v-else @click="removeFromFavorites">Retirer des favoris</button>
@@ -103,6 +124,37 @@ export default {
         this.filteredRecipes = this.recipes.filter(recipe => recipe.isFavorite);
       } else {
         this.filteredRecipes = this.recipes;
+      }
+    },
+    async rateRecipe(star) {
+      try {
+        if (!this.currentRecipe?.recipe_id) {
+          throw new Error('Aucune recette sélectionnée.');
+        }
+
+        const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/recipes/rate`, {
+          recipeId: this.currentRecipe.recipe_id,
+          rating: star,
+        }, { withCredentials: true });
+
+        alert(response.data.message || 'Note enregistrée avec succès.');
+        this.currentRecipe.rating = star;
+        await this.fetchAverageRating(this.currentRecipe.recipe_id);
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi de la note :', error);
+        alert('Une erreur est survenue lors de l\'enregistrement de la note.');
+      }
+    },
+    async fetchAverageRating(recipe_id) {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/rate/average/${recipe_id}`, {
+        withCredentials: true,
+      });
+        this.currentRecipe.averageRating = parseFloat(response.data.averageRating) || 0;
+      } catch (error) {
+        console.error('Erreur lors de la récupération de la moyenne des notes :', error);
+        this.currentRecipe.averageRating = 0;
+        alert('Impossible de récupérer la moyenne des notes.');
       }
     },
     async fetchRecipes() {
@@ -235,10 +287,11 @@ export default {
       }
     },
     async openModal(recipe) {
-      this.currentRecipe = recipe;
+      this.currentRecipe = { ...recipe, rating: recipe.rating || 0 };
       this.showModal = true;
 
       if (this.currentRecipe?.recipe_id) {
+        await this.fetchAverageRating(this.currentRecipe.recipe_id);
         await this.checkIfFavorite(this.currentRecipe.recipe_id);
       }
     },
@@ -380,5 +433,39 @@ button:hover {
 }
 .favorite-icon i {
   color: red;
+}
+.rating-container {
+  margin-top: 20px;
+  text-align: center;
+}
+.stars {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  font-size: 24px;
+  cursor: pointer;
+}
+.star {
+  color: #ccc;
+  transition: color 0.2s;
+}
+.star.filled {
+  color: #f39c12;
+}
+.star:hover {
+  color: #f1c40f;
+}
+.average-rating {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+.average-rating .star {
+  font-size: 20px;
+  color: #ccc;
+}
+.average-rating .star.filled {
+  color: #f39c12;
 }
 </style>

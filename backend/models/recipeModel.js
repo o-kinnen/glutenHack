@@ -364,6 +364,60 @@ const getFavoritesByUserId = async (userId) => {
   }
 };
 
+const upsertRate = async (userId, recipeId, rating) => {
+  const client = await db.connect();
+  try {
+    const query = `
+      INSERT INTO reviews (user_id, recipe_id, rating, created_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (user_id, recipe_id)
+      DO UPDATE SET rating = $3, created_at = NOW();
+    `;
+    await client.query(query, [userId, recipeId, rating]);
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement ou de la mise à jour de l\'évaluation :', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const getAverageRating = async (recipeId) => {
+  const client = await db.connect();
+  try {
+    const query = `
+      SELECT COALESCE(AVG(rating), 0) AS average_rating
+      FROM reviews
+      WHERE recipe_id = $1;
+    `;
+    const result = await client.query(query, [recipeId]);
+    return result.rows[0].average_rating;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la moyenne des notes :', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const getRateByRecipe = async (recipeId) => {
+  const client = await db.connect();
+  try {
+    const query = `
+      SELECT user_id, rating, created_at
+      FROM reviews
+      WHERE recipe_id = $1;
+    `;
+    const result = await client.query(query, [recipeId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des notes :', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   saveRecipe,
   getOrCreateFoodId,
@@ -374,5 +428,8 @@ module.exports = {
   addFavorite,
   isFavorite,
   removeFavorite,
-  getFavoritesByUserId
+  getFavoritesByUserId,
+  upsertRate,
+  getAverageRating,
+  getRateByRecipe
 };

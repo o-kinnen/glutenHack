@@ -3,6 +3,7 @@ const { getRecipesByUserId } = require('../models/recipeModel');
 const { deleteRecipeById } = require('../models/recipeModel');
 const { updateRecipe } = require('../models/recipeModel');
 const favoritesModel = require('../models/recipeModel');
+const recipeModel = require('../models/recipeModel');
 const path = require('path');
 const fs = require('fs');
 
@@ -225,7 +226,51 @@ exports.getFavorites = async (req, res) => {
   }
 };
 
+exports.addOrUpdateRate = async (req, res) => {
+  const { recipeId, rating } = req.body;
+  const userId = req.user.user_id;
 
+  if (!userId || !recipeId || !rating) {
+    return res.status(400).json({ message: 'Données manquantes : userId, recipeId ou rating.' });
+  }
 
+  try {
+    await recipeModel.upsertRate(userId, recipeId, rating);
+    res.status(200).json({ message: 'Note enregistrée ou mise à jour avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement ou de la mise à jour de la note :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
 
+exports.getAverageRating = async (req, res) => {
+  const { recipeId } = req.params;
 
+  if (!recipeId) {
+    return res.status(400).json({ message: 'Le champ recipeId est requis.' });
+  }
+
+  try {
+    const averageRating = await recipeModel.getAverageRating(recipeId);
+    res.status(200).json({ averageRating });
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la moyenne des notes :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+exports.getRateByRecipe = async (req, res) => {
+  const { recipeId } = req.params;
+
+  if (!recipeId) {
+    return res.status(400).json({ message: 'Le champ recipeId est requis.' });
+  }
+
+  try {
+    const reviews = await recipeModel.getRateByRecipe(recipeId);
+    res.status(200).json(reviews);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des notes :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};

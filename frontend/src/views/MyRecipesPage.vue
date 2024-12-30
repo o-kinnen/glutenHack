@@ -364,8 +364,9 @@ export default {
         await axios.delete(`${process.env.VUE_APP_URL_BACKEND}/recipes/${this.currentRecipe.recipe_id}`, {
           withCredentials: true
         });
-        this.recipes = this.recipes.filter(recipe => recipe.recipe_id !== this.currentRecipe.recipe_id);
         alert('Recette supprimée avec succès.');
+        this.recipes = this.recipes.filter(recipe => recipe.recipe_id !== this.currentRecipe.recipe_id);
+        this.filterRecipes();
         this.closeModal();
       } catch (error) {
         console.error('Erreur lors de la suppression de la recette :', error);
@@ -403,6 +404,13 @@ export default {
         if (response.status === 200) {
           alert('Recette mise à jour avec succès');
           updatedRecipe.image_url = response.data.updatedRecipe.image_url;
+
+          const index = this.recipes.findIndex(recipe => recipe.recipe_id === updatedRecipe.recipe_id);
+          if (index !== -1) {
+            this.recipes[index] = { ...this.recipes[index], ...updatedRecipe };
+          }
+
+          this.filterRecipes()
 
           this.updateRecipe(updatedRecipe);
           this.currentRecipe = { ...this.currentRecipe, ...updatedRecipe };

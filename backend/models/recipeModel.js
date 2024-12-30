@@ -203,6 +203,12 @@ const deleteRecipeById = async (recipeId, userId) => {
 
     const imageUrl = verifyResult.rows[0].image_url;
 
+    const deleteReviewsQuery = `
+      DELETE FROM reviews WHERE recipe_id = $1;
+    `;
+
+    await client.query(deleteReviewsQuery, [recipeId]);
+
     const deleteFavoritesQuery = `
       DELETE FROM favorites WHERE recipe_id = $1;
     `;
@@ -236,7 +242,7 @@ const deleteRecipeById = async (recipeId, userId) => {
     return true;
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Erreur lors de la suppression de la recette :', error);
+    console.error('Erreur exacte :', error.message, error.stack);
     throw error;
   } finally {
     client.release();

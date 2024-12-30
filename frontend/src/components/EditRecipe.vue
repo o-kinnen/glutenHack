@@ -1,101 +1,118 @@
 <template>
   <div v-if="isVisible" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
-      <h3>Créer une recette manuellement</h3>
-      <form @submit.prevent="handleSubmit">
+      <h3 v-if="mode === 'create'">Créer une recette</h3>
+      <h3 v-else>Modifier la recette</h3>
+      <form @submit.prevent="validateForm">
         <div class="form-group">
           <label for="recipe-title">Titre de la recette</label>
-          <input type="text" id="recipe-title" v-model="recipe.title" required />
+          <input type="text" id="recipe-title" v-model="localRecipe.recipe_name" />
+          <span v-if="errors.recipe_name">{{ errors.recipe_name }}</span>
         </div>
 
         <div class="form-group">
           <label for="recipe-photo">Photo de la recette</label>
-          <input type="file" id="recipe-photo" @change="handleFileUpload" />
-          <div v-if="previewImage" class="image-preview">
-            <img :src="previewImage" alt="Aperçu de l'image" />
+          <input type="file" id="recipe-photo" @change="handleFileUpload" name="image" accept=".png, .jpg, .jpeg" />
+
+          <div v-if="localRecipe.image_url || previewImage" class="image-preview">
+            <img :src="previewImage || localRecipe.image_url" alt="Aperçu de l'image" />
           </div>
+        
+          <span v-if="errors.image">{{ errors.image }}</span>
         </div>
 
         <div class="form-group">
           <label for="recipe-preparation-time">Temps de préparation</label>
-          <select id="recipe-preparation-time" v-model="recipe.time" required>
+          <select id="recipe-preparation-time" v-model="localRecipe.preparation_time">
+            <option value="">Choisissez une option</option>
             <option value="Rapide">Rapide</option>
             <option value="Moyen">Moyen</option>
             <option value="Long">Long</option>
           </select>
+          <span v-if="errors.preparation_time">{{ errors.preparation_time }}</span>
         </div>
 
         <div class="form-group">
           <label for="recipe-difficulty">Difficulté</label>
-          <select id="recipe-difficulty" v-model="recipe.difficulty" required>
+          <select id="recipe-difficulty" v-model="localRecipe.difficulty">
+            <option value="">Choisissez une option</option>
             <option value="Facile">Facile</option>
             <option value="Intermédiaire">Intermédiaire</option>
             <option value="Complexe">Complexe</option>
           </select>
+          <span v-if="errors.difficulty">{{ errors.difficulty }}</span>
         </div>
 
         <div class="form-group">
           <label for="recipe-people">Nombre de personnes</label>
-          <input type="number" id="recipe-people" v-model="recipe.people" min="1" required />
+          <input type="number" id="recipe-people" v-model="localRecipe.number_of_person" min="1" />
+          <span v-if="errors.number_of_person">{{ errors.number_of_person }}</span>
         </div>
 
         <div class="form-group">
           <label for="recipe-cuisine">Cuisine</label>
-          <select id="recipe-cuisine" v-model="recipe.cuisine" required>
+          <select id="recipe-cuisine" v-model="localRecipe.cuisine_type">
+            <option value="">Choisissez une option</option>
             <option value="Africaine">Africaine</option>
             <option value="Asiatique">Asiatique</option>
             <option value="Européenne">Européenne</option>
             <option value="Américaine">Américaine</option>
           </select>
+          <span v-if="errors.cuisine_type">{{ errors.cuisine_type }}</span>
         </div>
 
         <div class="form-group">
           <label for="recipe-type">Type</label>
-          <select id="recipe-type" v-model="recipe.type" required>
+          <select id="recipe-type" v-model="localRecipe.category_type">
+            <option value="">Choisissez une option</option>
             <option value="Petit-déjeuner">Petit-déjeuner</option>
             <option value="Lunch">Lunch</option>
             <option value="Dîner">Dîner</option>
             <option value="Dessert">Dessert</option>
           </select>
+          <span v-if="errors.category_type">{{ errors.category_type }}</span>
         </div>
 
         <div class="form-group">
           <label>Ingrédients</label>
-          <div v-for="(ingredient, index) in recipe.ingredients" :key="index" class="ingredient-group">
-            <input type="text" v-model="ingredient.name" placeholder="Nom de l'ingrédient" required />
-            <input type="text" v-model="ingredient.quantity" placeholder="Quantité" required />
+          <div v-for="(ingredient, index) in localRecipe.ingredients" :key="index" class="ingredient-group">
+            <input type="text" v-model="ingredient.food_name" placeholder="Nom de l'ingrédient" />
+            <input type="text" v-model="ingredient.quantity" placeholder="Quantité" />
             <button type="button" @click="removeIngredient(index)" class="remove-btn">Supprimer</button>
           </div>
           <button type="button" @click="addIngredient" class="add-btn">Ajouter un ingrédient</button>
+          <span v-if="errors.ingredients">{{ errors.ingredients }}</span>
         </div>
 
         <div class="form-group">
           <label>Instructions</label>
-          <div v-for="(instruction, index) in recipe.instructions" :key="index" class="instruction-group">
-            <input type="text" v-model="instruction.step" placeholder="Étape d'instruction" required />
+          <div v-for="(instruction, index) in localRecipe.instructions" :key="index" class="instruction-group">
+            <input type="text" v-model="instruction.step" placeholder="Étape d'instruction" />
             <button type="button" @click="removeInstruction(index)" class="remove-btn">Supprimer</button>
           </div>
           <button type="button" @click="addInstruction" class="add-btn">Ajouter une étape</button>
+          <span v-if="errors.instructions">{{ errors.instructions }}</span>
         </div>
 
         <div class="form-group">
           <label>Sans allergène</label>
           <div class="checkbox-group">
-            <label><input type="checkbox" value="Lactose" v-model="recipe.restrictionsList" /> Lactose</label>
-            <label><input type="checkbox" value="Gluten" v-model="recipe.restrictionsList" /> Gluten</label>
-            <label><input type="checkbox" value="Arachide" v-model="recipe.restrictionsList" /> Arachide</label>
-            <label><input type="checkbox" value="Œuf" v-model="recipe.restrictionsList" /> Œuf</label>
+            <label><input type="checkbox" value="Lactose" v-model="localRecipe.allergens_list" /> Lactose</label>
+            <label><input type="checkbox" value="Gluten" v-model="localRecipe.allergens_list" /> Gluten</label>
+            <label><input type="checkbox" value="Arachide" v-model="localRecipe.allergens_list" /> Arachide</label>
+            <label><input type="checkbox" value="Œuf" v-model="localRecipe.allergens_list" /> Œuf</label>
           </div>
         </div>
 
         <div class="form-group">
           <label>
-            <input type="checkbox" v-model="recipe.public" />
-            Rendre cette recette publique
+            <input type="checkbox" v-model="localRecipe.public" />Rendre cette recette publique
           </label>
         </div>
 
-        <button type="submit" class="confirm-btn">Créer la recette</button>
+        <button type="submit" class="confirm-btn">
+          {{ mode === 'create' ? 'Créer la recette' : 'Modifier la recette' }}
+        </button>
         <button type="button" @click="closeModal" class="cancel-btn">Annuler</button>
       </form>
     </div>
@@ -110,52 +127,134 @@ export default {
       type: Boolean,
       default: false,
     },
+    mode: {
+      type: String,
+      required: true,
+    },
+    recipe: {
+      type: Object,
+      default: () => ({}),
+    },
   },
   data() {
     return {
-      recipe: {
-        title: "",
-        time: "",
+      localRecipe: {
+        recipe_name: "",
+        preparation_time: "",
         difficulty: "",
-        people: 1,
-        cuisine: "",
-        type: "",
-        ingredients: [{ name: "", quantity: "" }],
+        number_of_person: 1,
+        cuisine_type: "",
+        category_type: "",
+        ingredients: [],
         instructions: [{ step: "" }],
-        restrictionsList: [],
+        allergens_list: [],
         image: null,
         public: false,
-        created_by_ai: false,
       },
       previewImage: null,
+      errors: {},
     };
   },
+  watch: {
+    recipe: {
+      immediate: true,
+      handler(newRecipe) {
+        if (newRecipe && Object.keys(newRecipe).length > 0) {
+          this.localRecipe = { ...newRecipe };
+          this.previewImage = null;
+          if (typeof newRecipe.instructions === "string") {
+            this.localRecipe.instructions = newRecipe.instructions
+              .split("\n")
+              .map((step) => ({ step: step.trim() }));
+          }
+        } else {
+          this.localRecipe = {
+            recipe_name: "",
+            preparation_time: "",
+            difficulty: "",
+            number_of_person: 1,
+            cuisine_type: "",
+            category_type: "",
+            ingredients: [],
+            instructions: [{ step: "" }],
+            allergens_list: [],
+            image: null,
+            public: false,
+          };
+        }
+      },
+    },
+  },
   methods: {
-    closeModal() {
-      this.$emit("close");
+    validateForm() {
+      this.errors = {};
+      if (!this.localRecipe.recipe_name) this.errors.recipe_name = "Le titre est obligatoire.";
+      if (!this.localRecipe.preparation_time)
+        this.errors.preparation_time = "Veuillez choisir un temps de préparation.";
+      if (!this.localRecipe.difficulty) this.errors.difficulty = "Veuillez choisir une difficulté.";
+      if (!this.localRecipe.number_of_person || this.localRecipe.number_of_person < 1)
+        this.errors.number_of_person = "Veuillez indiquer un nombre de personnes valide.";
+      if (!this.localRecipe.cuisine_type)
+        this.errors.cuisine_type = "Veuillez choisir un type de cuisine.";
+      if (!this.localRecipe.category_type)
+        this.errors.category_type = "Veuillez choisir une catégorie de recette.";
+
+      if (
+        !this.localRecipe.ingredients.some(
+          (ingredient) => ingredient.food_name && ingredient.quantity
+        )
+      ) {
+        this.errors.ingredients = "Veuillez ajouter au moins un ingrédient avec sa quantité.";
+      }
+
+      if (!this.localRecipe.instructions.some((instruction) => instruction.step)) {
+        this.errors.instructions = "Veuillez ajouter au moins une étape d'instruction.";
+      }
+
+      if (Object.keys(this.errors).length === 0) {
+        this.handleSubmit();
+      }
     },
     handleSubmit() {
-      this.$emit("create-recipe", { ...this.recipe });
+      if (this.mode === "create") {
+      this.$emit("create-recipe", { ...this.localRecipe });
+    } else if (this.mode === "edit") {
+      this.$emit("update-recipe", { ...this.localRecipe, image: this.localRecipe.image });
+    }
       this.closeModal();
+    },
+    closeModal() {
+      this.$emit("close");
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        this.recipe.image = file;
-        this.previewImage = URL.createObjectURL(file);
+        const fileType = file.type;
+        if (fileType === "image/png" || fileType === "image/jpeg") {
+          this.localRecipe.image = file;
+          this.previewImage = URL.createObjectURL(file);
+        } else {
+          this.errors.image = "Seuls les fichiers PNG et JPG sont acceptés.";
+        }
       }
     },
     addIngredient() {
-      this.recipe.ingredients.push({ name: "", quantity: "" });
+      if (!Array.isArray(this.localRecipe.ingredients)) {
+        this.localRecipe.ingredients = [];
+      }
+      this.localRecipe.ingredients.push({ food_name: "", quantity: "" });
     },
     removeIngredient(index) {
-      this.recipe.ingredients.splice(index, 1);
+      this.localRecipe.ingredients.splice(index, 1);
     },
     addInstruction() {
-      this.recipe.instructions.push({ step: "" });
+      if (!Array.isArray(this.localRecipe.instructions)) {
+        this.localRecipe.instructions = [];
+      }
+      this.localRecipe.instructions.push({ step: "" });
     },
     removeInstruction(index) {
-      this.recipe.instructions.splice(index, 1);
+      this.localRecipe.instructions.splice(index, 1);
     },
   },
 };

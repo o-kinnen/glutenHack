@@ -51,7 +51,7 @@ export default {
         });
       } catch (error) {
         if (error.response && error.response.status === 404) {
-          alert('Aucune liste des courses trouvée.');
+          console.error('Aucune liste des courses trouvée :', error);
         } else {
         console.error('Erreur lors de la récupération de la liste des courses :', error);
         }

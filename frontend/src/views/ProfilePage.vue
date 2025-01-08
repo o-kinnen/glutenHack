@@ -1,6 +1,6 @@
 <template>
     <div class="container mt-5 text-center">
-      <div class="card p-4 bg-dark text-white">
+      <div class="card p-4 text-white">
         <h2>Bienvenue {{ username }} !</h2>
         <p>Votre adresse mail : <strong>{{ email }}</strong></p>
         <p>Vos allergènes : <strong>{{ selectedRestrictionsText }}</strong></p>
@@ -148,11 +148,28 @@ export default {
 </script>
   
 <style scoped>
+.card {
+    background-color: #212121;
+    border: none;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+button.btn {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+button.btn:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
+}
 .container {
   max-width: 600px;
-}
-.card {
-  border-radius: 15px;
 }
 .modal-overlay {
   position: fixed;
@@ -166,7 +183,7 @@ export default {
   justify-content: center;
 }
 .modal-content {
-  background-color: #333;
+  background-color: #212121;
   color: #fff;
   padding: 20px;
   border-radius: 8px;
@@ -183,6 +200,29 @@ export default {
 }
 button {
   margin-top: 10px;
+}
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+input[type="checkbox"]:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>
   

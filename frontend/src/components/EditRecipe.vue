@@ -78,9 +78,9 @@
           <div v-for="(ingredient, index) in localRecipe.ingredients" :key="index" class="ingredient-group">
             <input type="text" v-model="ingredient.food_name" placeholder="Nom de l'ingrédient" />
             <input type="text" v-model="ingredient.quantity" placeholder="Quantité" />
-            <button type="button" @click="removeIngredient(index)" class="remove-btn">Supprimer</button>
+            <button type="button" @click="removeIngredient(index)" class="button">Supprimer</button>
           </div>
-          <button type="button" @click="addIngredient" class="add-btn">Ajouter un ingrédient</button>
+          <button type="button" @click="addIngredient" class="button">Ajouter un ingrédient</button>
           <span v-if="errors.ingredients">{{ errors.ingredients }}</span>
         </div>
 
@@ -88,9 +88,9 @@
           <label>Instructions</label>
           <div v-for="(instruction, index) in localRecipe.instructions" :key="index" class="instruction-group">
             <input type="text" v-model="instruction.step" placeholder="Étape d'instruction" />
-            <button type="button" @click="removeInstruction(index)" class="remove-btn">Supprimer</button>
+            <button type="button" @click="removeInstruction(index)" class="button">Supprimer</button>
           </div>
-          <button type="button" @click="addInstruction" class="add-btn">Ajouter une étape</button>
+          <button type="button" @click="addInstruction" class="button">Ajouter une étape</button>
           <span v-if="errors.instructions">{{ errors.instructions }}</span>
         </div>
 
@@ -110,10 +110,10 @@
           </label>
         </div>
 
-        <button type="submit" class="confirm-btn">
+        <button type="submit" class="button">
           {{ mode === 'create' ? 'Créer la recette' : 'Modifier la recette' }}
         </button>
-        <button type="button" @click="closeModal" class="cancel-btn">Annuler</button>
+        <button type="button" @click="closeModal" class="button">Annuler</button>
       </form>
     </div>
   </div>
@@ -274,7 +274,7 @@ export default {
   z-index: 1000;
 }
 .modal-content {
-  background: #fff;
+  background: #212121;
   padding: 20px;
   border-radius: 10px;
   width: 90%;
@@ -338,4 +338,48 @@ export default {
   border-radius: 10px;
   object-fit: cover;
 }
+button {
+    background-color: #BA9371;
+    color: white;
+    border: none; 
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    padding: 10px;
+    width: auto;
+}
+
+button:hover {
+    background-color: #C56929;
+    transform: scale(1.05); 
+    color: white;
+}
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white; 
+  border-radius: 4px; 
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.dropdown li:hover {
+  background-color: #C56929;
+}
+
 </style>

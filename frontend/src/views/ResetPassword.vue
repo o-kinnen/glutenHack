@@ -2,7 +2,8 @@
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card p-4">
+                <div class="card p-4 text-white">
+                    <h2 class="mb-4 text-center">Réinitialiser le mot de passe</h2>
                     <Form v-if="tokenValid" @submit="resetPassword" class="resetPassword-form">
                         <div class="mb-3">
                             <label for="password" class="form-label">Mot de passe</label>
@@ -131,3 +132,33 @@ export default {
     }
 }
 </script>
+<style scoped>
+.card {
+    background-color: #212121;
+    border: none;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+button.btn {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+button.btn:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
+}
+.router-link {
+    text-decoration: none!important;
+    color: #ffffff;
+    transition: text-decoration 0.3s;
+}
+.router-link:hover {
+    text-decoration: underline!important;
+}
+</style>

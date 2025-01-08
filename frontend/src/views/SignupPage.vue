@@ -2,7 +2,8 @@
   <div class="container mt-5">
     <div class="row justify-content-center">
       <div class="col-md-6">
-        <div class="card p-4">
+        <div class="card p-4 text-white">
+          <h2 class="mb-4 text-center">Créer un compte</h2>
           <Form @submit="handleSubmit" class="signup-form">
             <div class="mb-3">
               <label for="username" class="form-label">Nom</label>
@@ -60,11 +61,11 @@
                 class="form-check-input" 
                 v-model="termsAccepted"
               />
-              <label for="terms" class="form-check-label">J'accepte les conditions d'utilisation</label>
-              <router-link to="/terms" class="terms-link ms-2">Lire les termes de confidentialité</router-link>
+              <label for="terms" class="form-check-label">J'accepte les conditions d'utilisation</label><br>
+              <router-link to="/terms" class="router-link">Lire les termes de confidentialité</router-link>
             </div>
             <button type="submit" class="btn btn-primary w-100">Créer un compte</button>
-            <p class="text-center mt-3">Déjà un compte ? <router-link to="/login">Se connecter</router-link></p>
+            <p class="text-center mt-3">Déjà un compte ? <router-link class="router-link" to="/login">Se connecter</router-link></p>
           </Form>
           <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
           <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
@@ -167,3 +168,46 @@ export default {
 }
 </script>
 
+<style scoped>
+.card {
+    background-color: #212121;
+    border: none;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+button.btn {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+button.btn:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
+}
+.router-link {
+    text-decoration: none!important;
+    color: #ffffff;
+    transition: text-decoration 0.3s;
+}
+.router-link:hover {
+    text-decoration: underline!important;
+}
+input[type="checkbox"]:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+</style>

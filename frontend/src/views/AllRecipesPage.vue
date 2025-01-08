@@ -55,7 +55,7 @@
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
         <button class="close-btn" @click="closeModal">X</button>
-        <h3>{{ currentRecipe.recipe_name }}</h3>
+        <h3 style="text-align: center;">{{ currentRecipe.recipe_name }}</h3>
         <img v-if="currentRecipe.image_url" :src="currentRecipe.image_url" alt="Image de la recette" class="recipe-image" />
         <div class="recipe-info-container">
           <div class="recipe-info-line">
@@ -105,12 +105,10 @@
             </span>
           </div>
         </div>
-        <div>
-          <button v-if="!isFavorite" @click="addToFavorites">Ajouter aux favoris</button>
-          <button v-else @click="removeFromFavorites">Retirer des favoris</button>
-        </div>
-        <button @click="addToShoppingList">Ajouter à la liste des courses</button>
-        <button @click="generatePDF">Exporter en PDF</button>
+        <button v-if="!isFavorite" @click="addToFavorites">Ajouter aux favoris</button>
+        <button v-else @click="removeFromFavorites">Retirer des favoris</button><br>
+        <button @click="addToShoppingList">Ajouter à la liste des courses</button><br>
+        <button @click="generatePDF">Exporter en PDF</button><br>
         <button @click="closeModal">Fermer</button>
       </div>
     </div>
@@ -483,7 +481,7 @@ button:hover {
 .modal-content {
   max-height: 90vh;
   overflow-y: auto;
-  background: #fff;
+  background: #212121;
   padding: 20px;
   border-radius: 10px;
   width: 80%;
@@ -612,5 +610,42 @@ button:hover {
 }
 .allergen-filters input[type="checkbox"] {
   margin-right: 5px;
+}
+button {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    padding: 10px;
+    width: auto;
+}
+button:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
+}
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+input[type="checkbox"]:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>

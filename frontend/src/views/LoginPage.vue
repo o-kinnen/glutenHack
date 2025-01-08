@@ -1,7 +1,9 @@
 <template>
+    <div class="auth-page">
     <div class="container mt-5 text-center">
-        <div class="card p-4 bg-dark text-white">
-            <h2 class="mb-4">Connexion</h2>
+        <div class="row justify-content-center">
+        <div class="card p-4 text-white">
+            <h2 class="mb-4">Se connecter</h2>
             <Form @submit="login">
                 <div class="mb-3">
                     <label for="email" class="form-label">Adresse mail</label>
@@ -30,10 +32,12 @@
                 <button type="submit" class="btn btn-light btn-block mb-3">Se connecter</button>
                 <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
             </Form>
-            <router-link to="/password" class="text-light">Mot de passe oublié ?</router-link>
-            <router-link to="/signup" class="text-light">Pas de compte ?</router-link>
+            <router-link to="/password" class="router-link">Mot de passe oublié ?</router-link>
+            <router-link to="/signup" class="router-link">Pas de compte ?</router-link>
         </div>
     </div>
+</div>
+</div>
 </template>
 
 <script>
@@ -98,11 +102,34 @@ export default {
 }
 </script>
   
-<style scoped>
-.container {
-    max-width: 400px;
-}
+<style>
 .card {
-    border-radius: 15px;
+    background-color: #212121;
+    border: none;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+button.btn {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+button.btn:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
+}
+.router-link {
+    text-decoration: none!important;
+    color: #ffffff;
+    transition: text-decoration 0.3s;
+}
+.router-link:hover {
+    text-decoration: underline!important;
 }
 </style>
+

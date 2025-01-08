@@ -15,12 +15,12 @@
         </select>
         <button @click="addIngredient" :disabled="isLoading">Ajouter</button>
       </div>
-
+      <!--
       <div class="search-container">
         <input v-model="searchIngredient" placeholder="Rechercher un ingrédient" />
         <button @click="sortIngredientsByCategory" class="sort-button">Trier par catégorie</button>
       </div>
-
+      -->
       <div class="upload-container">
         <h5>Uploader une photo :</h5>
         <input type="file" @change="onFileChange" accept="image/*" />
@@ -57,7 +57,7 @@
             </select>
           </div>
         </div>
-        <button @click="validateSelection" class="validate-button">Valider</button>
+        <button @click="validateSelection" class="button">Valider</button>
       </div>
 
       <div v-if="sortByCategory" class="ingredient-list">
@@ -71,9 +71,9 @@
               </div>
               <div class="ingredient-actions">
                 <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" />
-                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="add-button">Ajouter</button>
-                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="subtract-button">Soustraire</button>
-                <button @click="removeIngredient(index, ingredient.name)" class="remove-button">Supprimer</button>
+                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="button">Ajouter</button>
+                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="button">Soustraire</button>
+                <button @click="removeIngredient(index, ingredient.name)" class="button">Supprimer</button>
               </div>
             </li>
           </ul>
@@ -88,9 +88,9 @@
             </div>
             <div class="ingredient-actions">
               <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" />
-              <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="add-button">Ajouter</button>
-              <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="subtract-button">Soustraire</button>
-              <button @click="removeIngredient(index, ingredient.name)" class="remove-button">Supprimer</button>
+              <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="button">Ajouter</button>
+              <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="button">Soustraire</button>
+              <button @click="removeIngredient(index, ingredient.name)" class="button">Supprimer</button>
             </div>
           </li>
         </ul>
@@ -497,7 +497,7 @@ export default {
 }
 .ingredient-quantity {
   font-size: 0.9em;
-  color: #555;
+  color: white;
 }
 .ingredient-actions {
   display: flex;
@@ -528,23 +528,40 @@ export default {
   cursor: pointer;
 }
 .sort-button {
-  background-color: #007bff;
+  background-color: #BA9371;
   color: white;
   border: none;
   padding: 5px 10px;
   border-radius: 3px;
   cursor: pointer;
 }
+button.validate-button{
+  background-color: #BA9371;
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
 .loading-spinner {
   margin-top: 10px;
   font-size: 16px;
-  color: #555;
+  color: white;
   font-weight: bold;
   text-align: center;
 }
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+button {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    padding: 10px;
+    width: auto;
+}
+button:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
 }
 .add-ingredients-container {
   display: flex;
@@ -559,5 +576,28 @@ button:disabled {
   color: red;
   font-weight: bold;
   margin-top: 10px;
+}
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+input[type="checkbox"]:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>

@@ -1,9 +1,9 @@
 <template>
   <div class="recipe-page">
-    <button @click="fetchRecipe" class="search-recipes-btn">
+    <button @click="fetchRecipe" class="button">
       Rechercher des recettes avec l'IA
     </button>
-    <button @click="openEditRecipe" class="create-recipe-btn">
+    <button @click="openEditRecipe" class="button">
       Créer une recette manuellement
     </button>
     <EditRecipe
@@ -126,7 +126,7 @@
         <div style="margin-top: 15px; text-align: center;">
           <label><input type="checkbox" v-model="recipe.public" />Rendre cette recette publique</label>
         </div>
-        <button @click="saveRecipe" v-if="recipe" :disabled="isSaving || isSaved">{{ isSaved ? 'Déjà enregistré' : isSaving ? 'Enregistrement...' : 'Valider la recette' }}</button>
+        <button @click="saveRecipe" v-if="recipe" :disabled="isSaving || isSaved">{{ isSaved ? 'Déjà enregistré' : isSaving ? 'Enregistrement...' : 'Valider la recette' }}</button><br>
         <button @click="closeModal">Fermer</button>
       </div>
     </modal>
@@ -136,8 +136,8 @@
         <p style="text-align: center;">Souhaitez-vous continuer ou modifier votre profil ?</p>
         <p style="text-align: center;">Si vous continuez la recette générée par l'IA ne prendra pas en compte vos allergènes</p>
         <div style="display: flex; justify-content: space-around; margin-top: 20px;">
-          <button @click="proceedWithoutAllergens" class="confirm-btn">Continuer</button>
-          <button @click="redirectToProfile" class="profile-btn">Modifier le profil</button>
+          <button @click="proceedWithoutAllergens" class="button">Continuer</button>
+          <button @click="redirectToProfile" class="button">Modifier le profil</button>
         </div>
       </div>
     </modal>
@@ -167,13 +167,13 @@
           />
         </li>
       </ul>
-      <button @click="confirmSelection" class="confirm-btn">Confirmer</button>
+      <button @click="confirmSelection" class="button">Confirmer</button>
     </template>
     <template v-else>
       <h3>Votre liste d’ingrédients en stock est vide</h3>
       <p>Voulez-vous ajouter des ingrédients en stock ? Vous serez redirigé vers la page des ingrédients.</p>
-      <button @click="handleStockModalResponse('add')" class="confirm-btn">Ajouter des ingrédients</button>
-      <button @click="handleStockModalResponse('cancel')" class="cancel-btn">Annuler</button>
+      <button @click="handleStockModalResponse('add')" class="button">Ajouter des ingrédients</button><br>
+      <button @click="handleStockModalResponse('cancel')" class="button">Annuler</button>
     </template>
   </div>
 </modal>
@@ -529,7 +529,7 @@ export default {
 }
 .dropdown-btn {
   padding: 10px;
-  background-color: #444;
+  background-color: #C56929;
   color: white;
   border: none;
   border-radius: 5px;
@@ -537,8 +537,7 @@ export default {
 }
 .dropdown {
   position: absolute;
-  background-color: white;
-  border: 1px solid #ccc;
+  background-color: black;
   border-radius: 5px;
   width: 150px;
   text-align: left;
@@ -555,7 +554,7 @@ export default {
   cursor: pointer;
 }
 .dropdown li:hover {
-  background-color: #f0f0f0;
+  background-color: #C56929;
 }
 .recipe-container {
   display: flex;
@@ -563,7 +562,7 @@ export default {
   align-items: center;
 }
 .recipe-card {
-  background-color: #222;
+  background-color: #212121;
   color: #fff;
   margin: 15px;
   padding: 20px;
@@ -575,17 +574,6 @@ export default {
 }
 .recipe-info {
   text-align: left;
-}
-button {
-  background-color: #444;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-button:hover {
-  background-color: #555;
 }
 .modal-overlay {
   position: fixed;
@@ -602,7 +590,7 @@ button:hover {
 .modal-content {
   max-height: 90vh;
   overflow-y: auto;
-  background: #fff;
+  background: #212121;
   padding: 20px;
   border-radius: 10px;
   width: 100%;
@@ -619,7 +607,7 @@ button:hover {
   gap: 15px;
 }
 .info-item {
-  background: #f9f9f9;
+  background: #212121;
   padding: 10px;
   border-radius: 5px;
   flex: 1;
@@ -644,7 +632,7 @@ button:hover {
   transform: translate(-50%, -50%);
   max-height: 90vh;
   overflow-y: auto;
-  background: #fff;
+  background: #212121;
   padding: 20px;
   border-radius: 10px;
   width: 90%;
@@ -677,17 +665,19 @@ button:hover {
 }
 .dropdown-btn {
   padding: 10px;
-  background-color: #444;
+  background-color: #BA9371;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
 }
 .dropdown-btn:hover {
-  background-color: #555;
+  background-color: #C56929;
+  transform: scale(1.05);
+  color: white;
 }
 .dropdown-btn[disabled] {
-  background-color: #888;
+  background-color: #BA9371;
   cursor: not-allowed;
 }
 .confirm-btn {
@@ -735,5 +725,42 @@ button:disabled:hover {
   border-radius: 10px;
   margin-bottom: 20px;
   object-fit: contain;
+}
+button {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    width: auto;
+    padding: 10px;
+}
+button:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
+}
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+input[type="checkbox"]:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>

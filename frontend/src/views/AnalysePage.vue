@@ -1,9 +1,7 @@
 <template>
   <div>
-    <h1>Mes analyses</h1>
-    <p>Recherchez un aliment en scannant ou en entrant son code-barre pour savoir s'il est sûr pour vous.</p>
-
-    <div>
+    <h1>Analyser un aliment</h1>
+    <p>Recherchez un aliment en entrant son code-barre pour savoir s'il est sûr pour vous.</p>
       <label for="codeBarreInput">Entrez un code-barre :</label>
       <input 
         type="text" 
@@ -11,27 +9,23 @@
         v-model="codeBarre" 
         placeholder="Entrez un code-barre" 
       />
-      <button @click="verifierAliment">Vérifier</button>
-    </div>
+      <button @click="verifierAliment" class="btn btn-primary w-5">Vérifier</button>
 
     <div v-if="resultat !== null" class="resultat">
       <p><strong>Nom de l'aliment :</strong> {{ resultat.nomAliment }}</p>
-
       <div v-if="resultat.imageUrl">
         <p><strong>Photo de l'aliment :</strong></p>
         <img :src="resultat.imageUrl" alt="Photo de l'aliment" style="max-width: 200px; border: 1px solid #ccc;" />
-      </div>
-
-      <p v-if="!resultat.peutManger">
+        <p v-if="!resultat.peutManger">
         ⚠️ Cet aliment contient des allergènes problématiques pour vous : {{ resultat.allergenesProbleme.join(', ') }}
       </p>
       <p v-else>
-        ✅ Cet aliment est sûr pour vous. Aucun allergène problématique détecté.
+        ✅ Cet aliment semble sûr pour vous. Aucun allergène de votre profil n'est mentionné.
       </p>
-
       <p class="source">
         <small>{{ resultat.source }}</small>
       </p>
+      </div>
     </div>
   </div>
 </template>
@@ -100,6 +94,14 @@ export default {
 </script>
 
 <style scoped>
+div {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 100vh;
+  text-align: center;
+}
 .resultat {
   margin-top: 20px;
   font-size: 1.2em;
@@ -112,5 +114,16 @@ img {
   margin-top: 20px;
   font-size: 0.9em;
   color: #666;
+}
+button.btn {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+button.btn:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
 }
 </style>

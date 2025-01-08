@@ -3,10 +3,10 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import axios from 'axios';
-import './assets/styles.scss'
-import './registerServiceWorker'
+import './registerServiceWorker';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
+import './assets/styles.scss';
 
 axios.defaults.withCredentials = true;
 

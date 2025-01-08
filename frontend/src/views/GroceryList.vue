@@ -1,7 +1,7 @@
 <template>
   <div class="grocery-container">
-    <h1>Ma liste des courses</h1>
-    <button @click="exportToFile" class="export-btn">Exporter</button>
+    <h1 class="text-white">Ma liste des courses</h1>
+      <button @click="exportToFile" class="button">Exporter</button>
     <ul class="grocery-list">
       <li v-for="(item, index) in shoppingItems" :key="index" class="grocery-item">
         <div class="grocery-details">
@@ -12,11 +12,11 @@
         <div class="grocery-actions">
           <div v-if="item.quantity && isQuantityNumeric(item.quantity)" class="update-section">
             <input type="number" v-model.number="quantities[item.food_id]" placeholder="Nouvelle quantité" class="quantity-input"/>
-            <button @click="updateQuantity(item.food_id, 'add')" class="update-btn">Ajouter</button>
-            <button @click="updateQuantity(item.food_id, 'subtract')" class="subtract-btn">Soustraire</button>
+            <button @click="updateQuantity(item.food_id, 'add')" class="button">Ajouter</button>
+            <button @click="updateQuantity(item.food_id, 'subtract')" class="button">Soustraire</button>
           </div>
           <span v-else-if="item.quantity" class="non-modifiable"></span>
-          <button @click="deleteItem(item.food_name)" class="delete-btn">Supprimer</button>
+          <button @click="deleteItem(item.food_name)" class="button">Supprimer</button>
         </div>
       </li>
     </ul>
@@ -140,7 +140,7 @@ export default {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #f8f9fa;
+  background-color: #212121;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
@@ -160,18 +160,19 @@ h1 {
   align-items: flex-start;
   padding: 15px;
   margin-bottom: 10px;
-  background-color: #ffffff;
+  background-color: #171717;
+  border: 1px solid #ddd;
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 .food-name {
   font-weight: bold;
-  color: #495057;
+  color: white;
   margin-bottom: 5px;
   display: block;
 }
 .food-quantity {
-  color: #6c757d;
+  color: white;
   font-size: 0.9rem;
 }
 .grocery-actions {
@@ -240,5 +241,19 @@ button {
 }
 .export-btn:hover {
   background-color: #0056b3;
+}
+button {
+    background-color: #BA9371;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    padding: 10px;
+    width: auto;
+}
+button:hover {
+    background-color: #C56929;
+    transform: scale(1.05);
+    color: white;
 }
 </style>

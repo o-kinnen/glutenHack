@@ -5,6 +5,7 @@ import store from './store'
 import axios from 'axios';
 import './registerServiceWorker';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap';
 import './assets/styles.scss';
 

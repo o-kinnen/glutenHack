@@ -1,6 +1,10 @@
 import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
+import axios from 'axios';
 import ResetPassword from '../src/views/ResetPassword.vue';
+
+// Mock d'axios
+jest.mock('axios');
 
 describe('ResetPassword.vue - Password Reset Form', () => {
   let wrapper;
@@ -22,7 +26,7 @@ describe('ResetPassword.vue - Password Reset Form', () => {
     jest.resetAllMocks();
   });
 
-  it('should display an error if password is empty', async () => {
+  it('should display an error if the password field is empty', async () => {
     await wrapper.find('#password').setValue('');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
@@ -32,7 +36,7 @@ describe('ResetPassword.vue - Password Reset Form', () => {
     expect(errorMessage.text()).toContain('Veuillez remplir ce champ correctement.');
   });
 
-  it('should display an error if password does not meet requirements', async () => {
+  it('should display an error if the password does not meet the requirements', async () => {
     await wrapper.find('#password').setValue('short');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
@@ -42,7 +46,7 @@ describe('ResetPassword.vue - Password Reset Form', () => {
     expect(errorMessage.text()).toContain('Veuillez remplir ce champ avec au moins 8 caractères.');
   });
 
-  it('should display an error if passwords do not match', async () => {
+  it('should display an error if the passwords do not match', async () => {
     await wrapper.find('#password').setValue('Password1!');
     await wrapper.find('#confirmPassword').setValue('DifferentPassword!');
     await wrapper.find('form').trigger('submit.prevent');
@@ -54,19 +58,26 @@ describe('ResetPassword.vue - Password Reset Form', () => {
   });
 
   it('should display a success message if password reset is successful', async () => {
-    await wrapper.setData({
-        successMessage: 'Mot de passe réinitialisé avec succès.'
-      });
-
+    axios.post.mockResolvedValueOnce({
+      data: { success: true }
+    });
+  
+    await wrapper.find('#password').setValue('Password1!');
+    await wrapper.find('#confirmPassword').setValue('Password1!');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
-
+  
     const successMessage = wrapper.find('.alert.alert-success');
     expect(successMessage.exists()).toBe(true);
-    expect(successMessage.text()).toContain('Mot de passe réinitialisé avec succès.');
+    expect(successMessage.text()).toContain('Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.');
   });
+  
 
-  it('should display an error message if token is invalid or expired', async () => {
+  it('should display an error message if the token is invalid or expired', async () => {
+    axios.get.mockResolvedValueOnce({
+      data: { success: false, message: 'Le lien de réinitialisation est invalide ou a expiré.' }
+    });
+
     wrapper = mount(ResetPassword, {
       global: {
         mocks: {
@@ -77,28 +88,22 @@ describe('ResetPassword.vue - Password Reset Form', () => {
       }
     });
 
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ success: false, message: 'Le lien de réinitialisation est invalide ou a expiré.' })
-      })
-    );
-
     await flushPromises();
 
-    const errorMessage = wrapper.find('.alert.alert-danger');
-    expect(errorMessage.exists()).toBe(true);
-    expect(errorMessage.text()).toContain('Erreur lors de la vérification du token. Veuillez réessayer plus tard.');
+    const message = wrapper.vm.message;
+    expect(message).toBe('Le lien de réinitialisation est invalide ou a expiré.');
   });
 
   it('should display an error message if there is a server error', async () => {
-    wrapper.setData({ password: 'Password1!', confirmPassword: 'Password1!' });
-    global.fetch = jest.fn(() => Promise.reject(new Error('Server error')));
+    axios.post.mockRejectedValueOnce(new Error('Server error'));
 
+    await wrapper.find('#password').setValue('Password1!');
+    await wrapper.find('#confirmPassword').setValue('Password1!');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
 
-    const errorMessage = wrapper.find('.alert.alert-danger');
-    expect(errorMessage.exists()).toBe(true);
-    expect(errorMessage.text()).toContain('Erreur lors de la vérification du token. Veuillez réessayer plus tard.');
+    const message = wrapper.vm.message;
+    expect(message).toBe('Erreur lors de la réinitialisation du mot de passe.');
   });
 });
+

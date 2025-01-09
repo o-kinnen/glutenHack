@@ -1,31 +1,29 @@
 <template>
-    <div class="auth-page">
-    <div class="container mt-5 text-center">
-        <div class="row justify-content-center">
+    <div class="container">
         <div class="card p-4 text-white">
             <h2 class="mb-4">Se connecter</h2>
             <Form @submit="login">
                 <div class="mb-3">
                     <label for="email" class="form-label">Adresse mail</label>
                     <Field 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        class="form-control" 
-                        v-model="email"
-                        rules="required|email"
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    class="form-control" 
+                    v-model="email"
+                    rules="required|email"
                     />
                     <ErrorMessage name="email" class="text-danger"/>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Mot de passe</label>
                     <Field 
-                        id="password" 
-                        name="password" 
-                        type="password" 
-                        class="form-control" 
-                        v-model="password"
-                        rules="required"
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    class="form-control" 
+                    v-model="password"
+                    rules="required"
                     />
                     <ErrorMessage name="password" class="text-danger"/>
                 </div>
@@ -36,12 +34,11 @@
             <router-link to="/signup" class="router-link">Pas de compte ?</router-link>
         </div>
     </div>
-</div>
-</div>
 </template>
 
 <script>
 import { defineRule, Form, Field, ErrorMessage } from 'vee-validate';
+import axios from 'axios';
 
 defineRule('required', value => {
   return value ? true : 'Veuillez remplir ce champ correctement.';
@@ -70,36 +67,37 @@ export default {
         }
     },
     methods: {
-        async login () {
-            try {
-                const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        email: this.email,
-                        password: this.password
-                    })
-                })
-                const data = await response.json()
-                if (response.ok) {
-                    this.$store.dispatch('login')
-                    this.$router.push('/profile')
-                } else {
-                    if (response.status === 401) {
-                        this.errorMessage = 'Mot de passe incorrect.'
-                    } else if (response.status === 404) {
-                        this.errorMessage = 'Compte non trouvé.'
-                    } else {
-                        this.errorMessage = data.message || 'Échec de la connexion. Veuillez vérifier votre email et votre mot de passe.'
-                    }
-                }
-            } catch (error) {
-                this.errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.'
-            }   
+        async login() {
+      try {
+        await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/login`, {
+          email: this.email,
+          password: this.password,
+        }, { withCredentials: true });
+
+        this.$store.dispatch('login');
+        this.$router.push('/profile');
+      } catch (error) {
+        if (error.response) {
+          if (error.response.status === 401) {
+            this.errorMessage = 'Mot de passe incorrect.';
+          } else if (error.response.status === 404) {
+            this.errorMessage = 'Compte non trouvé.';
+          } else {
+            this.errorMessage = error.response.data.message || 'Échec de la connexion. Veuillez vérifier votre email et votre mot de passe.';
+          }
+        } else {
+          this.errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.';
         }
-    }
-}
+        this.errorHandler(error);
+      }
+    },
+    errorHandler(error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Erreur :', error);
+      }
+    },
+  },
+};
 </script>
   
 <style>
@@ -111,6 +109,12 @@ export default {
     max-width: 400px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 button.btn {
     background-color: #BA9371;

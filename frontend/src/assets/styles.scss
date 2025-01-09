@@ -13,8 +13,12 @@ html, body {
 // Contenu principal
 .main-content {
   flex: 1;
-  margin-left: 250px;
   padding: 20px; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  text-align: center;
 }
 // Barre de navigation
 .navbar {
@@ -86,6 +90,66 @@ html, body {
 .sidebar a.router-link-exact-active {
   background-color: #C56929;
 }
+.navbar-toggler {
+  border: none;
+}
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba%28255, 255, 255, 0.7%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+.navbar-collapse {
+  text-align: center;
+}
+.navbar-nav .nav-item {
+  margin: 5px 0;
+}
+.collapse {
+  transition: height 0.3s ease;
+}
+.collapse.show {
+  display: block !important;
+}
+.logo {
+  margin-right: 10px;
+  width: 30px;
+  height: auto;
+}
+h5.site-name:hover {
+  text-decoration: underline;
+}
+.site-name {
+  font-size: 1.5rem;
+  color: #ffffff;
+  margin: 0;
+}
+.navbar-brand {
+  display: inline-block;
+  text-align: left;
+  margin: 0;
+}
+.container-fluid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+}
+.navbar-nav {
+  margin-left: auto;
+}
+.navbar-nav .nav-item .nav-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px 15px;
+}
+.collapse .nav-link {
+  background-color: #BA9371;
+  color: #ffffff !important;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+.collapse .nav-link:hover {
+  background-color: #C56929;
+}
 // Footer
 footer {
   border-top: solid #212121;
@@ -103,5 +167,18 @@ a.footer {
 }
 a.footer:hover {
   text-decoration: underline;
+}
+//Autres
+@media (max-width: 768px) {
+  .card {
+    width: 100%;
+    padding: 20px;
+  }
+}
+@media (max-width: 576px) {
+  .card {
+    max-width: 90%; /* Utilise presque toute la largeur de l'écran */
+    padding: 20px; /* Réduit le padding pour un meilleur espacement */
+  }
 }
 

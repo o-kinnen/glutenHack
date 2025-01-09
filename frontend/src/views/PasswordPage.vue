@@ -1,21 +1,21 @@
 <template>
-    <div class="container mt-5 text-center">
+    <div class="container text-center">
         <div class="card p-4 text-white">
             <h2 class="mb-4">Mot de passe oublié ?</h2>
             <Form @submit="sendResetLink" class="resetLink-form">
                 <div class="mb-3">
                     <label for="email" class="form-label">Adresse mail</label>
                     <Field 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        class="form-control" 
-                        v-model="email"
-                        rules="required|email"
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    class="form-control" 
+                    v-model="email"
+                    rules="required|email"
                     />
                     <ErrorMessage name="email" class="text-danger"/>
                 </div>
-                <button type="submit" class="btn btn-light btn-block mb-3">Envoyer un email</button>
+                <button type="submit" class="btn mb-3">Envoyer un email</button>
                 <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
                 <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
             </Form>
@@ -25,6 +25,7 @@
 
 <script>
 import { defineRule, Form, Field, ErrorMessage } from 'vee-validate';
+import axios from 'axios';
 
 defineRule('required', value => {
   return value ? true : 'Veuillez remplir ce champ correctement.';
@@ -55,20 +56,28 @@ export default {
     methods: {
         async sendResetLink () {
             try {
-                const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/send-reset-link`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: this.email }),
-                    credentials: 'include'
-                })
-                const data = await response.json()
-                if (data.success) {
-                    this.successMessage = 'Un email de réinitialisation de mot de passe a été envoyé.'
+                const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/send-reset-link`,
+                    { email: this.email },
+                    { withCredentials: true }
+                );
+
+                if (response.data.success) {
+                    this.successMessage = 'Un email de réinitialisation de mot de passe a été envoyé.';
                 } else {
-                    this.errorMessage = data.message || 'Erreur lors de l\'envoi de l\'email de réinitialisation.'
+                    this.handleError(new Error(response.data.message || 'Erreur lors de l\'envoi de l\'email de réinitialisation.'));
                 }
             } catch (error) {
-                this.errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.'
+                this.handleError(error);
+            }
+        },
+        handleError(error) {
+            if (process.env.NODE_ENV !== 'production') {
+                console.error(error);
+            }
+            if (error.response && error.response.data && error.response.data.message) {
+                this.errorMessage = error.response.data.message;
+            } else {
+                this.errorMessage = 'Une erreur s\'est produite. Veuillez réessayer plus tard.';
             }
         }
     }
@@ -84,6 +93,12 @@ export default {
     max-width: 400px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 button.btn {
     background-color: #BA9371;

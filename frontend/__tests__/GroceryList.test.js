@@ -13,7 +13,7 @@ afterAll(() => {
   console.error.mockRestore();
 });
 
-describe('GroceryPage.vue', () => {
+describe('GroceryList.vue', () => {
   let wrapper;
 
   beforeEach(() => {
@@ -21,7 +21,10 @@ describe('GroceryPage.vue', () => {
       data() {
         return {
           shoppingItems: [],
-          quantities: {}
+          quantities: {},
+          groupedItems: {},
+          categoriesVisible: false,
+          errorMessage: ''
         };
       }
     });
@@ -35,8 +38,8 @@ describe('GroceryPage.vue', () => {
     const shoppingListMock = {
       listId: 1,
       items: [
-        { food_id: 1, food_name: 'Apple', quantity: '5' },
-        { food_id: 2, food_name: 'Banana', quantity: '3' }
+        { food_id: 1, food_name: 'Apple', quantity: '5', category: 'Fruits' },
+        { food_id: 2, food_name: 'Banana', quantity: '3', category: 'Fruits' }
       ]
     };
     axios.get.mockResolvedValue({ data: shoppingListMock });
@@ -48,12 +51,32 @@ describe('GroceryPage.vue', () => {
     expect(wrapper.vm.quantities).toEqual({ 1: 5, 2: 3 });
   });
 
-  it('handles error while fetching shopping list', async () => {
-    axios.get.mockRejectedValue({ response: { status: 404 } });
+  it('displays error message when there is an error', async () => {
+    axios.get.mockRejectedValue(new Error('Network Error'));
 
     await wrapper.vm.fetchShoppingList();
 
-    expect(window.alert).toHaveBeenCalledWith('Aucune liste des courses trouvée.');
+    expect(wrapper.vm.errorMessage).toBe('Rien pour le moment');
+  });
+
+  it('displays "Rien pour le moment" when there are no shopping items', async () => {
+    await wrapper.setData({ shoppingItems: [] });
+
+    const emptyMessage = wrapper.find('.empty-message');
+    expect(emptyMessage.exists()).toBe(true);
+    expect(emptyMessage.text()).toBe('Rien pour le moment');
+  });
+
+  it('toggles category view when sorting is enabled', async () => {
+    const items = [
+      { food_id: 1, food_name: 'Apple', quantity: '5', category: 'Fruits' },
+      { food_id: 2, food_name: 'Banana', quantity: '3', category: 'Fruits' }
+    ];
+    await wrapper.setData({ shoppingItems: items });
+
+    wrapper.vm.toggleSort();
+    expect(wrapper.vm.categoriesVisible).toBe(true);
+    expect(wrapper.vm.groupedItems).toHaveProperty('Fruits');
   });
 
   it('deletes an item from the shopping list', async () => {
@@ -84,7 +107,7 @@ describe('GroceryPage.vue', () => {
 
     await wrapper.vm.deleteItem('Apple');
 
-    expect(console.error).toHaveBeenCalledWith("Erreur lors de la suppression de l'aliment :", expect.any(Error));
+    expect(console.error).toHaveBeenCalledWith('Erreur :', expect.any(Error));
   });
 
   it('updates item quantity correctly', async () => {
@@ -117,7 +140,7 @@ describe('GroceryPage.vue', () => {
 
     await wrapper.vm.updateQuantity(1, 'add');
 
-    expect(console.error).toHaveBeenCalledWith("Erreur lors de la mise à jour de la quantité :", expect.any(Error));
+    expect(console.error).toHaveBeenCalledWith('Erreur :', expect.any(Error));
   });
 
   it('alerts when updating quantity to an invalid value', async () => {

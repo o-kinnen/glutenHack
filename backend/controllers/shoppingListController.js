@@ -90,7 +90,7 @@ exports.getShoppingList = async (req, res) => {
     const listId = listResult.rows[0].list_id;
 
     const items = await db.query(
-      `SELECT f.food_id, f.food_name, sli.quantity
+      `SELECT f.food_id, f.food_name, f.category, sli.quantity
        FROM shopping_list_items sli
        JOIN foods f ON sli.food_id = f.food_id
        WHERE sli.list_id = $1`,

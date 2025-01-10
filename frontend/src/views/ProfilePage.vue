@@ -267,6 +267,10 @@ input[type="checkbox"]:checked::after {
   height: 24px;
   object-fit: contain;
 }
+.restriction-icon:hover {
+  transform: scale(1.2);
+  opacity: 0.8;
+}
 .checkbox-group input[type="checkbox"] {
   margin-left: 10px;
 }

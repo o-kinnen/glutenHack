@@ -7,7 +7,6 @@ const recipeModel = require('../models/recipeModel');
 const path = require('path');
 const fs = require('fs');
 
-
 exports.getAllRecipes = async (req, res) => {
   const userId = req.user.user_id;
   try {
@@ -55,7 +54,6 @@ exports.updateRecipe = async (req, res) => {
   try {
     const { recipeId } = req.params;
     const userId = req.user.user_id;
-
     const {
       title,
       time,
@@ -68,15 +66,12 @@ exports.updateRecipe = async (req, res) => {
       ingredients,
       instructions
     } = req.body;
-
     let parsedIngredients = [];
     let parsedRestrictions = [];
     let parsedInstructions = [];
-
     try {
       parsedIngredients = JSON.parse(ingredients);
       parsedRestrictions = JSON.parse(restrictionsList);
-
       const rawInstructions = JSON.parse(instructions);
       if (Array.isArray(rawInstructions)) {
         parsedInstructions = rawInstructions.map((inst) => inst.step);
@@ -87,25 +82,19 @@ exports.updateRecipe = async (req, res) => {
       console.error('Erreur de parsing des champs JSON :', error);
       return res.status(400).json({ error: 'Erreur de parsing des champs JSON.' });
     }
-
     const imageUrl = req.file
       ? `${process.env.URL_BACKEND}/uploads/${req.file.filename}`
       : null;
-
      const existingRecipe = await getRecipesByUserId(userId);
-
     if (!existingRecipe) {
       return res.status(404).json({ error: 'Recette non trouvée.' });
     }
     const recipeToUpdate = existingRecipe.find(recipe => recipe.recipe_id === parseInt(recipeId));
-
     if (!recipeToUpdate) {
       return res.status(404).json({ error: 'Recette non trouvée.' });
     }
-    
     if (imageUrl && recipeToUpdate.image_url) {
       const oldImagePath = path.join(__dirname, '../uploads', path.basename(recipeToUpdate.image_url));
-
       if (fs.existsSync(oldImagePath)) {
         fs.unlink(oldImagePath, (err) => {
           if (err) {
@@ -116,9 +105,7 @@ exports.updateRecipe = async (req, res) => {
         console.warn('Le fichier de l\'ancienne image n\'existe pas :', oldImagePath);
       }
     }
-
     const formattedInstructions = parsedInstructions.join('\n');
-
     const updatedRecipeData = {
       recipe_id: recipeId,
       recipe_name: title,
@@ -133,9 +120,7 @@ exports.updateRecipe = async (req, res) => {
       ingredients: parsedIngredients,
       image_url: imageUrl || existingRecipe.image_url,
     };
-
     await updateRecipe(updatedRecipeData);
-
     res.status(200).json({ 
       message: 'Recette mise à jour avec succès.', 
       updatedRecipe: { 
@@ -152,17 +137,14 @@ exports.updateRecipe = async (req, res) => {
 exports.addToFavorites = async (req, res) => {
   const { recipeId } = req.body;
   const userId = req.user.user_id;
-
   if (!userId || !recipeId) {
     return res.status(400).json({ message: 'Données invalides : userId ou recipeId manquant.' });
   }
-
   try {
     const isAlreadyFavorite = await favoritesModel.isFavorite(userId, recipeId);
     if (isAlreadyFavorite) {
       return res.status(409).json({ message: 'Cette recette est déjà dans vos favoris.' });
     }
-
     await favoritesModel.addFavorite(userId, recipeId);
     res.status(200).json({ message: 'Recette ajoutée aux favoris avec succès.' });
   } catch (error) {
@@ -174,17 +156,14 @@ exports.addToFavorites = async (req, res) => {
 exports.removeFromFavorites = async (req, res) => {
   const { recipeId } = req.params;
   const userId = req.user.user_id;
-
   if (!userId || !recipeId) {
     return res.status(400).json({ message: 'Données invalides : userId ou recipeId manquant.' });
   }
-
   try {
     const isFavorite = await favoritesModel.isFavorite(userId, recipeId);
     if (!isFavorite) {
       return res.status(404).json({ message: 'Cette recette n\'est pas dans vos favoris.' });
     }
-
     await favoritesModel.removeFavorite(userId, recipeId);
     res.status(200).json({ message: 'Recette retirée des favoris avec succès.' });
   } catch (error) {
@@ -196,11 +175,9 @@ exports.removeFromFavorites = async (req, res) => {
 exports.checkFavorite = async (req, res) => {
   const { recipeId } = req.params
   const userId = req.user.user_id;
-
   if (!userId || !recipeId) {
     return res.status(400).json({ message: 'Données invalides.' });
   }
-
   try {
     const isFavorite = await favoritesModel.isFavorite(userId, recipeId);
     res.status(200).json({ isFavorite });
@@ -212,11 +189,9 @@ exports.checkFavorite = async (req, res) => {
 
 exports.getFavorites = async (req, res) => {
   const userId = req.user.user_id;
-
   if (!userId) {
     return res.status(400).json({ message: 'Utilisateur non authentifié.' });
   }
-
   try {
     const favorites = await favoritesModel.getFavoritesByUserId(userId);
     res.status(200).json(favorites);
@@ -229,11 +204,9 @@ exports.getFavorites = async (req, res) => {
 exports.addOrUpdateRate = async (req, res) => {
   const { recipeId, rating } = req.body;
   const userId = req.user.user_id;
-
   if (!userId || !recipeId || !rating) {
     return res.status(400).json({ message: 'Données manquantes : userId, recipeId ou rating.' });
   }
-
   try {
     await recipeModel.upsertRate(userId, recipeId, rating);
     res.status(200).json({ message: 'Note enregistrée ou mise à jour avec succès.' });
@@ -245,11 +218,9 @@ exports.addOrUpdateRate = async (req, res) => {
 
 exports.getAverageRating = async (req, res) => {
   const { recipeId } = req.params;
-
   if (!recipeId) {
     return res.status(400).json({ message: 'Le champ recipeId est requis.' });
   }
-
   try {
     const averageRating = await recipeModel.getAverageRating(recipeId);
     res.status(200).json({ averageRating });
@@ -261,11 +232,9 @@ exports.getAverageRating = async (req, res) => {
 
 exports.getRateByRecipe = async (req, res) => {
   const { recipeId } = req.params;
-
   if (!recipeId) {
     return res.status(400).json({ message: 'Le champ recipeId est requis.' });
   }
-
   try {
     const reviews = await recipeModel.getRateByRecipe(recipeId);
     res.status(200).json(reviews);

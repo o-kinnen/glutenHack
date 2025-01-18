@@ -3,7 +3,6 @@ const app = require('../app');
 const pool = require('../utils/dbTest');
 
 describe('User Login Integration Test', () => {
-
   afterAll(async () => {
     try {
       await pool.query('DELETE FROM public."users" WHERE email = $1', ['testuser@example.com']);
@@ -21,7 +20,6 @@ describe('User Login Integration Test', () => {
         email: 'testuser@example.com',
         password: 'TestPassword1!'
       });
-    
     if (response.status !== 201) {
       throw new Error('Failed to create test user');
     }
@@ -34,7 +32,6 @@ describe('User Login Integration Test', () => {
         email: 'testuser@example.com',
         password: 'TestPassword1!'
       });
-
     expect(response.status).toBe(200);
     expect(response.body.message).toBe('Connexion réussie.');
   });
@@ -46,7 +43,6 @@ describe('User Login Integration Test', () => {
         email: 'testuser@example.com',
         password: 'WrongPassword1!'
       });
-
     expect(response.status).toBe(401);
     expect(response.body.message).toBe('Mot de passe incorrect.');
   });
@@ -58,7 +54,6 @@ describe('User Login Integration Test', () => {
         email: 'nonexistentuser@example.com',
         password: 'TestPassword1!'
       });
-
     expect(response.status).toBe(404);
     expect(response.body.message).toBe('Compte non trouvé.');
   });

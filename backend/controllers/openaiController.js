@@ -11,34 +11,28 @@ const getRecipe = async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'Accès non autorisé. Aucun jeton fourni.' });
     }
-
     const result = await db.query('SELECT user_id FROM tokens WHERE token = $1 AND expires_at > NOW()', [token]);
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Jeton invalide ou expiré.' });
     }
-
     const userId = result.rows[0].user_id;
-
     const { time, difficulty, cuisine, people, type, availableIngredients } = req.body;
-
-
-    const restrictionsList = await userModel.getRestrictionsByUserId(userId);
-
+    let restrictionsList = await userModel.getRestrictionsByUserId(userId);
+    if (restrictionsList.length == 0 ){
+      restrictionsList = ["Pas de mention"]
+    }
     let content = `Donne-moi une recette en français ayant aucune trace des éléments suivants : ${restrictionsList} dans les ingrédients et qui répond au critère suivants :
     Temps de préparation : ${time}. Difficulté : ${difficulty}. Cuisine : ${cuisine}. Nombre de personnes : ${people}. Type de repas : ${type}.`;
-
     if (availableIngredients && availableIngredients.length > 0) {
       const stockIngredients = availableIngredients
       .map(ingredient => `${ingredient.food_name} (${ingredient.selectedQuantity} ${ingredient.unit || ''})`)
       .join(', ');
       content += ` Il faut qu'un maximum des ingrédients suivants soient utilisés : ${stockIngredients}.`;
     }
-
     content += ` Le format de la réponse doit être en JSON valide avec les clés suivantes :
     "restrictionsList" dont la valeur est égale à une liste contenant les éléments suivants ${restrictionsList},
     "title", "ingredients", "quantity" et "instructions". La clé "ingredients" doit être une liste d'ingrédients dont les noms des aliments doivent être
     au singulier en minuscule, la clé "quantity" est la quantité pour chaque ingrédient et la clé "instructions" doit être une liste d'étapes.`;
-
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -58,7 +52,6 @@ const getRecipe = async (req, res) => {
         },
       }
     );
-
     if (response.data && response.data.choices && response.data.choices.length > 0) {
       const recipeData = JSON.parse(response.data.choices[0].message.content);
       if (recipeData && recipeData.title && recipeData.ingredients && recipeData.instructions) {
@@ -106,16 +99,13 @@ const generateRecipeImage = async (recipeTitle) => {
         },
       }
     );
-
     if (response.data && response.data.data && response.data.data.length > 0) {
       const imageUrl = response.data.data[0].url;
       const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
       const imageFileName = `${Date.now()}-${recipeTitle.replace(/ /g, '_')}.png`;
       const imagePath = path.join(__dirname, '..', 'uploads', imageFileName);
       const writer = fs.createWriteStream(imagePath);
-
       imageResponse.data.pipe(writer);
-
       return new Promise((resolve, reject) => {
         writer.on('finish', () => {
           const fullUrl = `${process.env.URL_BACKEND}/uploads/${imageFileName}`;
@@ -138,19 +128,13 @@ const saveRecipe = async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'Accès non autorisé. Aucun jeton fourni.' });
     }
-
     const result = await db.query('SELECT user_id FROM tokens WHERE token = $1 AND expires_at > NOW()', [token]);
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Jeton invalide ou expiré.' });
     }
-
     const userId = result.rows[0].user_id;
-
     const isGeneratedByAI = req.body.recipe ? req.body.recipe.created_by_ai : req.body.created_by_ai === 'true';
-
     const recipe = isGeneratedByAI ? req.body.recipe : req.body;
-
-
     const {
       title,
       time,
@@ -164,17 +148,14 @@ const saveRecipe = async (req, res) => {
       instructions,
       quantity,
     } = recipe;
-
     let parsedIngredients = [];
     let parsedInstructions = [];
     let parsedRestrictions = [];
-
     if (!isGeneratedByAI) {
       try {
         parsedIngredients = JSON.parse(ingredients);
         parsedInstructions = JSON.parse(instructions);
         parsedRestrictions = JSON.parse(restrictionsList);
-
       } catch (err) {
         console.error('Erreur de parsing des valeurs JSON :', err);
         return res.status(400).json({ error: 'Erreur de parsing des valeurs JSON' });
@@ -187,19 +168,14 @@ const saveRecipe = async (req, res) => {
       parsedInstructions = instructions;
       parsedRestrictions = restrictionsList || [];
     }
-
     if (!title || !time || !difficulty || !people || !cuisine || !type || parsedIngredients.length === 0 || parsedInstructions.length === 0) {
       return res.status(400).json({ error: 'Tous les champs obligatoires doivent être remplis.' });
     }
-
     const isRecipePublic = isPublic === true || isPublic === 'true';
-
     const instructionsString = parsedInstructions.map((inst) => inst.step ? inst.step : inst).join('\n');
-
     const imageUrl = req.file
       ? `${process.env.URL_BACKEND}/uploads/${req.file.filename}`
       : recipe.image || null;
-
     const recipeData = {
       recipe_name: title,
       instructions: instructionsString,
@@ -215,9 +191,7 @@ const saveRecipe = async (req, res) => {
       public: isRecipePublic,
       image_url: imageUrl,
     };
-
     const recipeId = await recipeModel.saveRecipe(recipeData);
-
     return res.status(201).json({ message: 'Recette enregistrée avec succès', recipeId });
   } catch (error) {
     console.error('Erreur lors de l\'enregistrement de la recette :', error);

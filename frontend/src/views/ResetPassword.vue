@@ -6,24 +6,24 @@
                 <div class="mb-3">
                     <label for="password" class="form-label">Mot de passe</label>
                     <Field 
-                    id="password" 
-                    name="password" 
-                    type="password" 
-                    class="form-control" 
-                    v-model="password"
-                    rules="required|min:8|passwordUppercase|passwordLowercase|passwordNumber|passwordSpecial|noSpaces"
+                        id="password" 
+                        name="password" 
+                        type="password" 
+                        class="form-control" 
+                        v-model="password"
+                        rules="required|min:8|passwordUppercase|passwordLowercase|passwordNumber|passwordSpecial|noSpaces"
                     />
                     <ErrorMessage name="password" class="text-danger"/>
                 </div>
                 <div class="mb-3">
                     <label for="confirmPassword" class="form-label">Répéter le mot de passe</label>
                     <Field 
-                    id="confirmPassword" 
-                    name="confirmPassword" 
-                    type="password" 
-                    class="form-control" 
-                    v-model="confirmPassword"
-                    rules="required|matches:password"
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        type="password" 
+                        class="form-control" 
+                        v-model="confirmPassword"
+                        rules="required|matches:password"
                     />
                     <ErrorMessage name="confirmPassword" class="text-danger"/>
                 </div>
@@ -37,8 +37,7 @@
 <script>
 import axios from 'axios';
 import { defineRule } from 'vee-validate';
-import { Form, Field, ErrorMessage } from 'vee-validate';
-  
+import { Form, Field, ErrorMessage } from 'vee-validate'; 
 defineRule('required', value => {
     return value ? true : 'Veuillez remplir ce champ correctement.';
 });
@@ -66,7 +65,6 @@ defineRule('passwordSpecial', (value) => {
 defineRule('noSpaces', (value) => {
     return !/\s/.test(value) || "Le mot de passe ne doit pas contenir d'espaces.";
 });
-  
 export default {
     name: 'ResetPassword',
     components: {

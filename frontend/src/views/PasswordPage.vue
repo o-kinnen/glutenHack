@@ -6,12 +6,12 @@
                 <div class="mb-3">
                     <label for="email" class="form-label">Adresse mail</label>
                     <Field 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    class="form-control" 
-                    v-model="email"
-                    rules="required|email"
+                        id="email" 
+                        name="email" 
+                        type="email" 
+                        class="form-control" 
+                        v-model="email"
+                        rules="required|email"
                     />
                     <ErrorMessage name="email" class="text-danger"/>
                 </div>
@@ -26,11 +26,9 @@
 <script>
 import { defineRule, Form, Field, ErrorMessage } from 'vee-validate';
 import axios from 'axios';
-
 defineRule('required', value => {
   return value ? true : 'Veuillez remplir ce champ correctement.';
 });
-
 defineRule('email', value => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(value)) {
@@ -38,7 +36,6 @@ defineRule('email', value => {
   }
   return true;
 });
-
 export default {
     name: 'PasswordPage',
     components: {
@@ -60,7 +57,6 @@ export default {
                     { email: this.email },
                     { withCredentials: true }
                 );
-
                 if (response.data.success) {
                     this.successMessage = 'Un email de réinitialisation de mot de passe a été envoyé.';
                 } else {

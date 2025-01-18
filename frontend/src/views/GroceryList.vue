@@ -6,7 +6,7 @@
         {{ errorMessage }}
       </div>
       <div v-else-if="shoppingItems.length === 0" class="empty-message">
-        La liste est vide
+        La liste est vide...
       </div>
       <div v-else>
         <div class="action-buttons">
@@ -27,48 +27,77 @@
                 <span v-else class="food-name">(pas de quantité définie)</span>
               </div>
               <div class="grocery-actions">
-                <div v-if="item.quantity && isQuantityNumeric(item.quantity)" class="update-section">
+                <div v-if="isQuantityNumeric(item.quantity)" class="update-section">
                   <input type="number" v-model.number="quantities[item.food_id]" placeholder="Nouvelle quantité" class="quantity-input"/>
-                  <div class="icon-wrapper">
-                    <img src="/img/ajouter.png" alt="Ajouter" class="action-icon add-icon" @click="updateQuantity(item.food_id, 'add')">
+                  <div class="modal-actions-icons">
+                    <i class="bi bi-plus-circle-fill icon-action" 
+                      @click="updateQuantity(item.food_id, 'add')" 
+                      title="Ajouter">
+                    </i>
                     <span class="tooltip-text">Ajouter</span>
-                  </div>
-                  <div class="icon-wrapper">
-                    <img src="/img/soustraire.png" alt="Soustraire" class="action-icon subtract-icon" @click="updateQuantity(item.food_id, 'subtract')">
+                    <i class="bi bi-dash-circle-fill icon-action" 
+                      @click="updateQuantity(item.food_id, 'subtract')" 
+                      title="Diminuer">
+                    </i>
                     <span class="tooltip-text">Diminuer</span>
+                    <i class="bi bi-trash-fill icon-action" 
+                      @click="deleteItem(item.food_name)" 
+                      title="Supprimer">
+                    </i>
+                    <span class="tooltip-text">Supprimer</span>
                   </div>
                 </div>
-                <div class="icon-wrapper">
-                  <img src="/img/supprimer.png" alt="Supprimer" class="action-icon delete-icon" @click="deleteItem(item.food_name)">
+                <div v-else>
+                <div class="modal-actions-icons">
+                  <i
+                    class="bi bi-trash-fill icon-action"
+                    @click="deleteItem(item.food_name)"
+                    title="Supprimer">
+                  </i>
                   <span class="tooltip-text">Supprimer</span>
                 </div>
               </div>
-            </li>
-          </ul>
-        </div>
+            </div>
+          </li>
+        </ul>
       </div>
-      <ul v-else class="grocery-list">
-        <li v-for="(item, index) in shoppingItems" :key="index" class="grocery-item">
-          <div class="grocery-details">
-            <span class="food-name">{{ item.food_name }}</span>
-            <span v-if="item.quantity" class="food-name">({{ item.quantity }})</span>
-            <span v-else class="food-name">(pas de quantité définie)</span>
-          </div>
-          <div class="grocery-actions">
-            <div v-if="item.quantity && isQuantityNumeric(item.quantity)" class="update-section">
-              <input type="number" v-model.number="quantities[item.food_id]" placeholder="Nouvelle quantité" class="quantity-input"/>
-              <div class="icon-wrapper">
-                <img src="/img/ajouter.png" alt="Ajouter" class="action-icon add-icon" @click="updateQuantity(item.food_id, 'add')">
+    </div>
+    <ul v-else class="grocery-list">
+      <li v-for="(item, index) in shoppingItems" :key="index" class="grocery-item">
+        <div class="grocery-details">
+          <span class="food-name">{{ item.food_name }}</span>
+          <span v-if="item.quantity" class="food-name">({{ item.quantity }})</span>
+          <span v-else class="food-name">(pas de quantité définie)</span>
+        </div>
+        <div class="grocery-actions">
+          <div v-if="isQuantityNumeric(item.quantity)" class="update-section">
+            <input v-if="isQuantityNumeric(item.quantity)" type="number" v-model.number="quantities[item.food_id]" placeholder="Nouvelle quantité" class="quantity-input"/>
+              <div class="modal-actions-icons">
+                <i class="bi bi-plus-circle-fill icon-action" 
+                  @click="updateQuantity(item.food_id, 'add')" 
+                  title="Ajouter">
+                </i>
                 <span class="tooltip-text">Ajouter</span>
-              </div>
-              <div class="icon-wrapper">
-                <img src="/img/soustraire.png" alt="Soustraire" class="action-icon subtract-icon" @click="updateQuantity(item.food_id, 'subtract')">
+                <i class="bi bi-dash-circle-fill icon-action" 
+                  @click="updateQuantity(item.food_id, 'subtract')" 
+                  title="Diminuer">
+                </i>
                 <span class="tooltip-text">Diminuer</span>
+                <i class="bi bi-trash-fill icon-action" 
+                  @click="deleteItem(item.food_name)" 
+                  title="Supprimer">
+                </i>
+                <span class="tooltip-text">Supprimer</span>
               </div>
             </div>
-            <div class="icon-wrapper">
-              <img src="/img/supprimer.png" alt="Supprimer" class="action-icon delete-icon" @click="deleteItem(item.food_name)">
-              <span class="tooltip-text">Supprimer</span>
+            <div v-else>
+              <div class="modal-actions-icons">
+                <i class="bi bi-trash-fill icon-action"
+                  @click="deleteItem(item.food_name)"
+                  title="Supprimer">
+                </i>
+                <span class="tooltip-text">Supprimer</span>
+              </div>
             </div>
           </div>
         </li>
@@ -125,26 +154,21 @@ export default {
         'Crustacés',
         'Sauces'
       ];
-
       this.groupedItems = {};
-
       this.shoppingItems.forEach(item => {
-    const category = item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : 'Autres';
-    
-    if (!this.groupedItems[category]) {
-      this.groupedItems[category] = [];
-    }
-
-    this.groupedItems[category].push(item);
-  });
-
-  this.groupedItems = Object.keys(this.groupedItems)
-    .sort((a, b) => categoriesOrder.indexOf(a) - categoriesOrder.indexOf(b))
-    .reduce((acc, key) => {
-      acc[key] = this.groupedItems[key];
-      return acc;
-    }, {});
-},
+        const category = item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : 'Autres';
+        if (!this.groupedItems[category]) {
+          this.groupedItems[category] = [];
+        }
+        this.groupedItems[category].push(item);
+      });
+      this.groupedItems = Object.keys(this.groupedItems)
+        .sort((a, b) => categoriesOrder.indexOf(a) - categoriesOrder.indexOf(b))
+        .reduce((acc, key) => {
+        acc[key] = this.groupedItems[key];
+        return acc;
+      }, {});
+    },
     toggleSort() {
       if (this.categoriesVisible) {
         this.categoriesVisible = false;
@@ -158,10 +182,8 @@ export default {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/shopping-list/`, {
           withCredentials: true,
         });
-
         this.listId = response.data.listId;
         this.shoppingItems = response.data.items;
-
         this.shoppingItems.forEach((item) => {
           item.category = item.category ? item.category : 'Autres';
           if (this.isQuantityNumeric(item.quantity)) {
@@ -174,29 +196,27 @@ export default {
       }
     },
     exportToFile() {
-  let fileContent = "Ma liste des courses\n\n";
-
-  if (this.categoriesVisible) {
-    Object.keys(this.groupedItems).forEach(category => {
-      fileContent += `${category}\n`;
-      this.groupedItems[category].forEach(item => {
-        fileContent += `- ${item.food_name} (${item.quantity})\n`;
-      });
-      fileContent += '\n';
-    });
-  } else {
-    this.shoppingItems.forEach(item => {
-      fileContent += `- ${item.food_name} (${item.quantity})\n`;
-    });
-  }
-
-  const blob = new Blob([fileContent], { type: 'text/plain' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'Ma_liste_des_courses.txt';
-  link.click();
-  URL.revokeObjectURL(link.href);
-},
+      let fileContent = "Ma liste des courses\n\n";
+      if (this.categoriesVisible) {
+        Object.keys(this.groupedItems).forEach(category => {
+          fileContent += `${category}\n`;
+          this.groupedItems[category].forEach(item => {
+            fileContent += `- ${item.food_name} (${item.quantity})\n`;
+          });
+          fileContent += '\n';
+        });
+      } else {
+        this.shoppingItems.forEach(item => {
+          fileContent += `- ${item.food_name} (${item.quantity})\n`;
+        });
+      }
+      const blob = new Blob([fileContent], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Ma_liste_des_courses.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    },
     async deleteItem(foodName) {
       try {
         await axios.delete(
@@ -206,7 +226,6 @@ export default {
             withCredentials: true,
           }
         );
-
         this.shoppingItems = this.shoppingItems.filter((item) => item.food_name !== foodName);
         if (this.categoriesVisible) {
           this.groupItemsByCategory();
@@ -215,16 +234,13 @@ export default {
         this.handleError(error);
       }
     },
-
     async updateQuantity(foodId, action = 'add') {
       const newQuantity = this.quantities[foodId];
       if (newQuantity === undefined || newQuantity <= 0) {
         alert("Veuillez entrer une quantité valide.");
         return;
       }
-
       const incrementValue = action === 'add' ? newQuantity : -newQuantity;
-
       try {
         const updatedItem = this.shoppingItems.find((item) => item.food_id === foodId);
         if (updatedItem) {
@@ -245,7 +261,6 @@ export default {
             withCredentials: true,
           }
         );
-
         if (updatedItem) {
           updatedItem.quantity = response.data.newQuantity;
         }
@@ -253,7 +268,6 @@ export default {
         this.handleError(error);
       }
     },
-
     isQuantityNumeric(quantity) {
       return /^\d+/.test(quantity);
     }
@@ -331,7 +345,7 @@ h1 {
 .update-section {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
 }
 .quantity-input {
   width: 50px;
@@ -447,12 +461,26 @@ button:hover {
   margin-right: 10px;
 }
 .empty-message {
-  background-color: #BA9371;
-  color: white;
-  padding: 15px;
   text-align: center;
-  border-radius: 8px;
-  font-weight: bold;
-  margin-bottom: 20px;
+  font-size: 1.2em;
+  color: #666;
+  margin-top: 20px;
+}
+.modal-actions-icons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.icon-action {
+  font-size: 24px;
+  color: #BA9371;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.3s ease;
+}
+.icon-action:hover {
+  transform: scale(1.2);
+  color: #C56929;
 }
 </style>

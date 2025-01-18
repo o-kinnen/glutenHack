@@ -10,7 +10,6 @@ jest.mock('nodemailer', () => ({
 }));
 
 describe('Password Update Integration Test', () => {
-
   let token;
 
   beforeAll(async () => {
@@ -18,11 +17,9 @@ describe('Password Update Integration Test', () => {
       'INSERT INTO public."users" (username, email, password) VALUES ($1, $2, $3)',
       ['testuser', 'testuser@example.com', await bcrypt.hash('OldPassword1!', 10)]
     );
-
     const response = await request(app)
       .post('/users/send-reset-link')
       .send({ email: 'testuser@example.com' });
-
     token = response.body.token;
   });
 
@@ -44,7 +41,6 @@ describe('Password Update Integration Test', () => {
         token: 'invalid-token',
         newPassword: 'AnotherNewPassword1!',
       });
-
     expect(response.status).toBe(400);
     expect(response.body.message).toBe('Token invalide.');
   });

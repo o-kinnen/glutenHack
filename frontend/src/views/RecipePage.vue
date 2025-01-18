@@ -1,107 +1,130 @@
 <template>
-  <div class="recipe-page">
-    <button @click="fetchRecipe" class="button">
-      Rechercher des recettes avec l'IA
-    </button>
-    <button @click="openEditRecipe" class="button">
-      Créer une recette manuellement
-    </button>
-    <EditRecipe
-      :isVisible="showEditRecipe"
-      mode="create"
-      @close="closeEditRecipe"
-      @create-recipe="handleEditRecipe"
-    />
-    <div class="filter-buttons">
-      <div>
-        <button @click="toggleTimeDropdown" class="dropdown-btn">
-          Temps de préparation : {{ selectedTime || 'Rapide' }}
+  <div class="container">
+    <div class="card p-4 text-white">
+      <h1 class="text-white">Créer une nouvelle recette</h1>
+      <p>Vous pouvez créer une recette en l'éditant ou bien la générer à l'aide d'une IA selon vos besoins.</p>
+
+      <div  class="buttons-container">
+        <button @click="openIARecipeModal" class="button">
+          Générer
         </button>
-        <div v-if="showTimeDropdown" class="dropdown">
-          <ul>
-            <li v-for="option in timeOptions" :key="option" @click="selectTime(option)">
-              {{ option }}
-            </li>
-          </ul>
+        <button @click="openEditRecipe" class="button">
+          Editer
+        </button>
+        <EditRecipe
+          :isVisible="showEditRecipe"
+          mode="create"
+          @close="closeEditRecipe"
+          @create-recipe="handleEditRecipe"
+        />
+      </div>
+
+
+  <modal v-if="showIARecipeModal" @close="closeIARecipeModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3 style="text-align: center;">Personnalisez votre recette</h3>
+    <div class="filter-grid">
+        <div class="filter-item">
+          <button @click="toggleTimeDropdown" class="dropdown-btn">
+            Préparation : {{ selectedTime || 'Rapide' }}
+          </button>
+          <div v-if="showTimeDropdown" class="dropdown">
+            <ul>
+              <li v-for="option in timeOptions" :key="option" @click="selectTime(option)">
+                {{ option }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="filter-item">
+          <button @click="toggleDifficultyDropdown" class="dropdown-btn">
+            Difficulté : {{ selectedDifficulty || 'Facile' }}
+          </button>
+          <div v-if="showDifficultyDropdown" class="dropdown">
+            <ul>
+              <li v-for="option in difficultyOptions" :key="option" @click="selectDifficulty(option)">
+                {{ option }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="filter-item">
+          <button @click="toggleCuisineDropdown" class="dropdown-btn">
+            Cuisine : {{ selectedCuisine || 'Européenne' }}
+          </button>
+          <div v-if="showCuisineDropdown" class="dropdown">
+            <ul>
+              <li v-for="option in cuisineOptions" :key="option" @click="selectCuisine(option)">
+                {{ option }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="filter-item">
+          <button @click="togglePeopleDropdown" class="dropdown-btn">
+            Part(s) : {{ selectedPeople || '1' }}
+          </button>
+          <div v-if="showPeopleDropdown" class="dropdown">
+            <ul>
+              <li v-for="option in peopleOptions" :key="option" @click="selectPeople(option)">
+                {{ option }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="filter-item">
+          <button @click="toggleTypeDropdown" class="dropdown-btn">
+            Type : {{ selectedType || 'Petit-déjeuner' }}
+          </button>
+          <div v-if="showTypeDropdown" class="dropdown">
+            <ul>
+              <li v-for="option in typeOptions" :key="option" @click="selectType(option)">
+                {{ option }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="filter-item">
+          <button @click="toggleStockOption" class="dropdown-btn">
+            Stock : {{ includeStock ? 'Oui' : 'Non' }}
+          </button>
         </div>
       </div>
-      <div>
-        <button @click="toggleDifficultyDropdown" class="dropdown-btn">
-          Difficulté : {{ selectedDifficulty || 'Facile' }}
-        </button>
-        <div v-if="showDifficultyDropdown" class="dropdown">
-          <ul>
-            <li v-for="option in difficultyOptions" :key="option" @click="selectDifficulty(option)">
-              {{ option }}
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div>
-        <button @click="toggleCuisineDropdown" class="dropdown-btn">
-          Cuisine : {{ selectedCuisine || 'Européenne' }}
-        </button>
-        <div v-if="showCuisineDropdown" class="dropdown">
-          <ul>
-            <li v-for="option in cuisineOptions" :key="option" @click="selectCuisine(option)">
-              {{ option }}
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div>
-        <button @click="togglePeopleDropdown" class="dropdown-btn">
-          Nombre de personnes : {{ selectedPeople || '1' }}
-        </button>
-        <div v-if="showPeopleDropdown" class="dropdown">
-          <ul>
-            <li v-for="option in peopleOptions" :key="option" @click="selectPeople(option)">
-              {{ option }}
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div>
-        <button @click="toggleTypeDropdown" class="dropdown-btn">
-          Type : {{ selectedType || 'Petit-déjeuner' }}
-        </button>
-        <div v-if="showTypeDropdown" class="dropdown">
-          <ul>
-            <li v-for="option in typeOptions" :key="option" @click="selectType(option)">
-              {{ option }}
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div>
-        <button @click="toggleStockOption" class="dropdown-btn">
-          Inclure les ingrédients en stock : {{ includeStock ? 'Oui' : 'Non' }}
-        </button>
-      </div>
+      <div class="action-buttons">
+        <button @click="fetchRecipe" class="button">Générer</button>
+        <button @click="closeIARecipeModal" class="button">Fermer</button>
+      </div>  
+  </div>
+</modal>
+
+<div v-if="isLoading" class="loading-overlay">
+  <div class="loading-message">
+    <h2>Recette en cours de création...</h2>
+    <div class="icon-slider">
+      <img src='/img/gluten.png' alt="Icône 1" class="icon" />
+      <img src='/img/lait.png' alt="Icône 2" class="icon" />
+      <img src='/img/oeufs.png' alt="Icône 3" class="icon" />
+      <img src='/img/arachide.png' alt="Icône 4" class="icon" />
+      <img src='/img/noix.png' alt="Icône 5" class="icon" />
+      <img src='/img/poissons.png' alt="Icône 6" class="icon" />
+      <img src='/img/soja.png' alt="Icône 7" class="icon" />
+      <img src='/img/crustacés.png' alt="Icône 8" class="icon" />
+      <img src='/img/moutarde.png' alt="Icône 9" class="icon" />
+      <img src='/img/céleri.png' alt="Icône 10" class="icon" />
     </div>
-    <div v-if="isLoading" class="loading-spinner">
-      Recherche en cours ...
-    </div>
-    <div v-if="recipe && !isLoading" class="recipe-container">
-      <div class="recipe-card" style="width: 80vw; max-width: 70%;">
-        <div class="recipe-info">
-          <h3>{{ recipe.title }}</h3>
-          <img :src="recipe.image" alt="Image de la recette" v-if="recipe.image" class="recipe-image" />
-          <img>
-          <button @click="openModal">Voir les détails</button>
-        </div>
-      </div>
-    </div>
+  </div>
+</div>
+
+
     <modal v-if="showModal" @close="closeModal" class="modal-overlay">
       <div class="modal-content">
         <h3 style="text-align: center;">{{ recipe.title }}</h3>
         <img :src="recipe.image" alt="Image de la recette" v-if="recipe.image" class="modal-recipe-image" />
         <div class="recipe-info-container">
           <div class="recipe-info-line">
-          <div class="info-item"><strong>Généré par l'IA :</strong> {{ recipe.created_by_ai ? 'Oui' : 'Non' }}</div>
-          <div class="info-item"><strong>Temps de préparation:</strong> {{ recipe.time }}</div>
+          <div class="info-item"><strong>Préparation:</strong> {{ recipe.time }}</div>
           <div class="info-item"><strong>Difficulté:</strong> {{ recipe.difficulty }}</div>
-          <div class="info-item"><strong>Nombre de personnes:</strong> {{ recipe.people }}</div>
+          <div class="info-item"><strong>Part(s):</strong> {{ recipe.people }}</div>
         </div>
         <div class="recipe-info-line">
           <div class="info-item"><strong>Cuisine:</strong> {{ recipe.cuisine }}</div>
@@ -123,10 +146,6 @@
             {{ instruction }}
           </li>
         </ol>
-        <div style="margin-top: 15px; text-align: center;">
-          <label><input type="checkbox" v-model="recipe.public" />Rendre cette recette publique</label>
-        </div>
-        <button @click="saveRecipe" v-if="recipe" :disabled="isSaving || isSaved">{{ isSaved ? 'Déjà enregistré' : isSaving ? 'Enregistrement...' : 'Valider la recette' }}</button><br>
         <button @click="closeModal">Fermer</button>
       </div>
     </modal>
@@ -167,7 +186,7 @@
           />
         </li>
       </ul>
-      <button @click="confirmSelection" class="button">Confirmer</button>
+      <button @click="confirmSelection" >Confirmer</button>
     </template>
     <template v-else>
       <h3>Votre liste d’ingrédients en stock est vide</h3>
@@ -177,14 +196,15 @@
     </template>
   </div>
 </modal>
-
+</div>
+<canvas id="confetti-canvas"></canvas>
   </div>
 </template>
   
 <script>
 import EditRecipe from '@/components/EditRecipe.vue';
+import confetti from 'canvas-confetti';
 import axios from 'axios';
-
 export default {
   name: 'RecipePage',
   components: {
@@ -213,8 +233,34 @@ export default {
       selectedType: 'Petit-déjeuner',
       timeOptions: ['Rapide', 'Moyen', 'Long'],
       difficultyOptions: ['Facile', 'Intermédiaire', 'Complexe'],
-      cuisineOptions: ['Européenne', 'Asiatique', 'Américaine', 'Africaine'],
-      peopleOptions: ['1', '2', '3', '4'],
+      cuisineOptions: [
+        'Européenne',
+        'Asiatique',
+        'Américaine',
+        'Africaine',
+        'Méditerranéenne',
+        'Indienne',
+        'Moyen-Orientale',
+        'Mexicaine',
+        'Caribéenne',
+        'Italienne',
+        'Chinoise',
+        'Japonaise',
+        'Thaïlandaise',
+        'Coréenne',
+        'Vietnamienne',
+        'Espagnole',
+        'Grecque',
+        'Française',
+        'Allemande',
+        'Nordique',
+        'Brésilienne',
+        'Argentine',
+        'Turque',
+        'Marocaine',
+        'Éthiopienne'
+      ],
+      peopleOptions: ['1', '2', '3', '4', '5', '6', '7', '8'],
       typeOptions: ['Petit-déjeuner', 'Lunch', 'Dîner', 'Dessert'],
       time: '',
       difficulty: '',
@@ -223,18 +269,34 @@ export default {
       type: '',
       public: true,
       availableIngredients: [],
-      selectedIngredients: []
+      selectedIngredients: [],
+      showIARecipeModal: false
     };
   },
   mounted() {
     this.fetchAvailableIngredients();
   },
   methods: {
+    triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const myConfetti = confetti.create(canvas, { resize: true });
+      myConfetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+    },
     openEditRecipe() {
       this.showEditRecipe = true;
     },
     closeEditRecipe() {
       this.showEditRecipe = false;
+    },
+    openIARecipeModal() {
+      this.showIARecipeModal = true;
+    },
+    closeIARecipeModal() {
+      this.showIARecipeModal = false;
     },
     validateQuantity(ingredient) {
       if (ingredient.selectedQuantity > ingredient.maxQuantity) {
@@ -251,15 +313,12 @@ export default {
           selectedQuantity: ingredient.selectedQuantity,
           unit: ingredient.unit || "unité"
         }));
-
       if (this.selectedIngredientsWithQuantities.some(item => item.selectedQuantity <= 0)) {
         alert("Veuillez spécifier une quantité valide pour chaque ingrédient sélectionné.");
         return;
       }
-
       this.includeStock = true;
       this.showStockModal = false;
-
     },
     async handleEditRecipe(recipe) {
       try {
@@ -278,8 +337,7 @@ export default {
         if (recipe.image) {
           formData.append('image', recipe.image);
         }
-
-        const response = await axios.post(
+        await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/recipes/save`,
           formData,
           {
@@ -289,10 +347,7 @@ export default {
             withCredentials: true,
           }
         );
-
-        if (response.status === 201) {
-          alert('Recette enregistrée avec succès !');
-        }
+        alert('Recette créée avec succès.');
       } catch (error) {
         console.error('Erreur lors de l\'enregistrement de la recette :', error);
         alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
@@ -303,11 +358,9 @@ export default {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
         withCredentials: true
       });
-
       return response.data.restrictions || [];
       } catch (error) {
         console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
-        alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
         return [];
       }
     },
@@ -331,7 +384,6 @@ export default {
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des ingrédients en stock :', error);
-        alert('Impossible de récupérer les ingrédients en stock. Veuillez réessayer.');
       }
     },
     toggleStockOption() {
@@ -355,18 +407,23 @@ export default {
     async fetchRecipe() {
       try {
         const restrictions = await this.getUserRestrictions();
-
         if (!restrictions || restrictions.length === 0) {
           this.showAllergenAlert = true;
         } else {
           this.executeRecipeLogic();
         }
       } catch (error) {
-        console.error('Erreur lors de la vérification des restrictions alimentaires :', error);
-        alert('Une erreur est survenue. Veuillez réessayer.');
+        if (error.response && error.response.status === 401) {
+          alert('Votre session a expiré. Veuillez vous reconnecter.');
+          this.$router.push('/login');
+        } else {
+          console.error('Erreur lors de la génération de la recette :', error);
+          alert('Une erreur est survenue. Veuillez réessayer plus tard.');
+        }
       }
     },
     async executeRecipeLogic() {
+      this.closeIARecipeModal();
       this.isLoading = true;
       try {
         const requestData = {
@@ -377,7 +434,6 @@ export default {
           type: this.selectedType,
           availableIngredients: this.includeStock ? this.selectedIngredientsWithQuantities : []
         };
-
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`,
           requestData,
@@ -388,7 +444,6 @@ export default {
             withCredentials: true,
           }
         );
-
         if (response.data && response.data.title && response.data.ingredients && response.data.instructions) {
           const allergensList = [...new Set(response.data.restrictionsList)];
           this.recipe = {
@@ -406,6 +461,9 @@ export default {
             created_by_ai: response.data.created_by_ai,
             public: true
           };
+          await this.saveRecipe();
+          this.showModal = true;
+          this.triggerConfetti();
         } else {
           throw new Error('Les données de la recette sont manquantes ou mal formatées.');
         }
@@ -433,7 +491,6 @@ export default {
             quantity: ingredient.quantity,
           })),
         };
-    
         await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/recipes/save`,
           requestData,
@@ -443,7 +500,6 @@ export default {
           }
         }
         );
-        alert('Recette enregistrée avec succès !');
         this.isSaved = true;
       } catch (error) {
         console.error('Erreur lors de l\'enregistrement de la recette :', error);
@@ -509,8 +565,22 @@ export default {
 </script>
   
 <style scoped>
-.recipe-page {
-  text-align: center;
+.card {
+  background-color: #212121;
+  border: none;
+  border-radius: 8px;
+  width: 700px;
+  max-width: 100%;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .loading-spinner {
   font-size: 1.5em;
@@ -562,15 +632,12 @@ export default {
   align-items: center;
 }
 .recipe-card {
-  background-color: #212121;
+  background: #171717;
   color: #fff;
-  margin: 15px;
   padding: 20px;
   border-radius: 10px;
   width: 300px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  text-align: center;
 }
 .recipe-info {
   text-align: left;
@@ -732,7 +799,7 @@ button {
     border: none;
     transition: all 0.3s ease;
     border-radius: 4px;
-    width: auto;
+    width: 150px;
     padding: 10px;
 }
 button:hover {
@@ -751,8 +818,8 @@ input[type="checkbox"] {
   position: relative;
 }
 input[type="checkbox"]:checked {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: #C56929;
+  border-color: #C56929;
 }
 input[type="checkbox"]:checked::after {
   content: "✓";
@@ -762,5 +829,174 @@ input[type="checkbox"]:checked::after {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+.buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.2);
+  border-top: 8px solid #ffffff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+  position: relative;
+  overflow: visible;
+}
+.filter-item {
+  position: relative;
+  overflow: visible;
+}
+.dropdown-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #BA9371;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 16px;
+}
+.dropdown {
+  position: absolute;
+  width: 100%;
+  background-color: #212121;
+  border-radius: 5px;
+  margin-top: 5px;
+  z-index: 1050;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.dropdown ul {
+  list-style-type: none;
+  padding: 10px;
+  margin: 0;
+}
+.dropdown li {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
+}
+.dropdown li:hover {
+  background-color: #C56929;
+  color: white;
+}
+.action-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+.button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.button:hover {
+  background-color: #C56929;
+}
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.loading-message {
+  text-align: center;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 2px solid #C56929;
+  border-radius: 10px;
+  padding: 20px;
+  width: 350px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+.icon-slider {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  height: 100px;
+  position: relative;
+}
+.icon-slider .icon {
+  width: 100px;
+  height: 100px;
+  opacity: 0;
+  position: absolute;
+  animation: iconFade 5s steps(10) infinite;
+}
+.icon-slider .icon:nth-child(1) {
+  animation-delay: 0s;
+}
+.icon-slider .icon:nth-child(2) {
+  animation-delay: 0.5s;
+}
+.icon-slider .icon:nth-child(3) {
+  animation-delay: 1s;
+}
+.icon-slider .icon:nth-child(4) {
+  animation-delay: 1.5s;
+}
+.icon-slider .icon:nth-child(5) {
+  animation-delay: 2s;
+}
+.icon-slider .icon:nth-child(6) {
+  animation-delay: 2.5s;
+}
+.icon-slider .icon:nth-child(7) {
+  animation-delay: 3s;
+}
+.icon-slider .icon:nth-child(8) {
+  animation-delay: 3.5s;
+}
+.icon-slider .icon:nth-child(9) {
+  animation-delay: 4s;
+}
+.icon-slider .icon:nth-child(10) {
+  animation-delay: 4.5s;
+}
+@keyframes iconFade {
+  0%, 10% {
+    opacity: 1;
+  }
+  11%, 100% {
+    opacity: 0;
+  }
 }
 </style>

@@ -2,17 +2,14 @@ const db = require('../utils/db');
 const fs = require('fs');
 const path = require('path');
 
-
 const getOrCreateFoodId = async (foodName) => {
     const client = await db.connect();
     try {
       const selectQuery = `SELECT food_id FROM foods WHERE food_name = $1;`;
       const selectResult = await client.query(selectQuery, [foodName]);
-  
       if (selectResult.rows.length > 0) {
         return selectResult.rows[0].food_id;
       }
-
       const insertQuery = `INSERT INTO foods (food_name) VALUES ($1) RETURNING food_id;`;
       const insertResult = await client.query(insertQuery, [foodName]);
       return insertResult.rows[0].food_id;
@@ -40,11 +37,9 @@ const saveRecipe = async (recipeData) => {
       public,
       image_url
     } = recipeData;
-  
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-  
       const recipeQuery = `
         INSERT INTO recipes (recipe_name, instructions, preparation_time, difficulty, cuisine_type, number_of_person, category_type, allergens_list, user_id, created_by_ai, public, image_url)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -66,10 +61,8 @@ const saveRecipe = async (recipeData) => {
       ];
       const recipeResult = await client.query(recipeQuery, recipeValues);
       const recipeId = recipeResult.rows[0].recipe_id;
-  
       for (const ingredient of ingredients) {
         const foodId = await getOrCreateFoodId(ingredient.food_name);
-  
         const ingredientQuery = `
           INSERT INTO recipes_ingredients (recipe_id, food_id, quantity)
           VALUES ($1, $2, $3);
@@ -77,7 +70,6 @@ const saveRecipe = async (recipeData) => {
         const ingredientValues = [recipeId, foodId, ingredient.quantity || 'N/A'];
         await client.query(ingredientQuery, ingredientValues);
       }
-  
       await client.query('COMMIT');
       return recipeId;
     } catch (error) {
@@ -89,7 +81,6 @@ const saveRecipe = async (recipeData) => {
     }
   };
   
-
   const getAllRecipes = async (userId) => {
     const client = await db.connect();
     try {
@@ -122,13 +113,10 @@ const saveRecipe = async (recipeData) => {
         GROUP BY r.recipe_id
         ORDER BY r.created_at DESC;
       `;
-  
       const result = await client.query(query, [userId]);
-  
       if (result.rows.length === 0) {
         return [];
       }
-  
       return result.rows;
     } catch (error) {
       console.error('Erreur lors de la récupération des recettes :', error);
@@ -138,8 +126,6 @@ const saveRecipe = async (recipeData) => {
     }
   };
   
-  
-
 const getRecipesByUserId = async (user_id) => {
   const client = await db.connect();
   try {
@@ -172,13 +158,10 @@ const getRecipesByUserId = async (user_id) => {
       GROUP BY r.recipe_id
       ORDER BY r.created_at DESC;
     `;
-  
     const result = await client.query(query, [user_id]);
-  
     if (result.rows.length === 0) {
       return [];
     }
-  
     return result.rows;
   } catch (error) {
     console.error('Erreur lors de la récupération des recettes pour cet utilisateur :', error);
@@ -192,7 +175,6 @@ const deleteRecipeById = async (recipeId, userId) => {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-
     const verifyQuery = `
       SELECT image_url FROM recipes WHERE recipe_id = $1 AND user_id = $2;
     `;
@@ -200,33 +182,25 @@ const deleteRecipeById = async (recipeId, userId) => {
     if (verifyResult.rows.length === 0) {
       return false;
     }
-
     const imageUrl = verifyResult.rows[0].image_url;
-
     const deleteReviewsQuery = `
       DELETE FROM reviews WHERE recipe_id = $1;
     `;
-
     await client.query(deleteReviewsQuery, [recipeId]);
-
     const deleteFavoritesQuery = `
       DELETE FROM favorites WHERE recipe_id = $1;
     `;
     await client.query(deleteFavoritesQuery, [recipeId]);
-
     const deleteIngredientsQuery = `
       DELETE FROM recipes_ingredients WHERE recipe_id = $1;
     `;
     await client.query(deleteIngredientsQuery, [recipeId]);
-
     const deleteRecipeQuery = `
       DELETE FROM recipes WHERE recipe_id = $1;
     `;
     await client.query(deleteRecipeQuery, [recipeId]);
-
     if (imageUrl) {
       const filePath = path.join(__dirname, '../uploads', path.basename(imageUrl));
-    
       if (fs.existsSync(filePath)) {
         fs.unlink(filePath, (err) => {
           if (err) {
@@ -237,7 +211,6 @@ const deleteRecipeById = async (recipeId, userId) => {
         console.warn(`Le fichier n'existe pas : ${filePath}`);
       }
     }
-    
     await client.query('COMMIT');
     return true;
   } catch (error) {
@@ -264,12 +237,9 @@ const updateRecipe = async (recipeData) => {
     ingredients,
     image_url,
   } = recipeData;
-
   const client = await db.connect();
-
   try {
     await client.query('BEGIN');
-
     const updateRecipeQuery = `
       UPDATE recipes
       SET recipe_name = $1,
@@ -285,7 +255,6 @@ const updateRecipe = async (recipeData) => {
           ${image_url ? ', image_url = $10' : ''}
       WHERE recipe_id = ${image_url ? '$11' : '$10'};
     `;
-    
     const updateRecipeValues = [
       recipe_name,
       preparation_time,
@@ -298,12 +267,9 @@ const updateRecipe = async (recipeData) => {
       instructions,
       ...(image_url ? [image_url, recipe_id] : [recipe_id]),
     ];
-
     await client.query(updateRecipeQuery, updateRecipeValues);
-
     const deleteIngredientsQuery = `DELETE FROM recipes_ingredients WHERE recipe_id = $1;`;
     await client.query(deleteIngredientsQuery, [recipe_id]);
-
     for (const ingredient of ingredients) {
       const foodId = await getOrCreateFoodId(ingredient.food_name);
       const insertIngredientQuery = `
@@ -313,7 +279,6 @@ const updateRecipe = async (recipeData) => {
       const insertIngredientValues = [recipe_id, foodId, ingredient.quantity || 'N/A'];
       await client.query(insertIngredientQuery, insertIngredientValues);
     }
-
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

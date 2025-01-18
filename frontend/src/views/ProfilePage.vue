@@ -6,8 +6,8 @@
       <p>Mes allergènes :</p>
       <div v-if="selectedRestrictions.length" class="allergens-grid">
         <div v-for="(restriction, index) in selectedRestrictions" :key="index" class="allergen-item">
-        <img :src="`/img/${restriction.toLowerCase()}.png`" alt="Icone" class="restriction-icon" />
-        <span><strong>{{ restriction }}</strong></span>
+          <img :src="`/img/${restriction.toLowerCase()}.png`" alt="Icone" class="restriction-icon" />
+          <span><strong>{{ restriction }}</strong></span>
         </div>
       </div>
       <p v-else><strong>Aucun</strong></p>
@@ -29,7 +29,7 @@
               <input type="checkbox" v-model="restriction.selected"/>
               <span class="text-and-icon">
                 <img :src="`/img/${restriction.name.toLowerCase()}.png`" alt="Icone" class="restriction-icon" />
-                {{ restriction.name }}
+                  {{ restriction.name }}
               </span>
             </label>
           </div>
@@ -56,7 +56,7 @@ export default {
         { name: "Lait", selected: false},
         { name: "Oeufs", selected: false },
         { name: "Arachide", selected: false },
-        { name: "Fruits à coque", selected: false },
+        { name: "Noix", selected: false },
         { name: "Poissons", selected: false },
         { name: "Soja", selected: false },
         { name: "Crustacés", selected: false },
@@ -103,7 +103,6 @@ export default {
     },
     async submitForm() {
       const selectedRestrictions = this.restrictions.filter(item => item.selected).map(item => item.name);
-  
       try {
         const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/update-preferences/${this.userId}`, {
           method: 'PUT',
@@ -111,7 +110,6 @@ export default {
           body: JSON.stringify({ restrictions: selectedRestrictions}),
           credentials: 'include',
         });
-  
         if (response.ok) {
           this.showModal = false;
           await this.fetchProfile();
@@ -266,6 +264,7 @@ input[type="checkbox"]:checked::after {
   width: 24px;
   height: 24px;
   object-fit: contain;
+  transition: all 0.3s ease;
 }
 .restriction-icon:hover {
   transform: scale(1.2);

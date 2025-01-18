@@ -1,0 +1,2 @@
+"use strict";(self["webpackChunkfrontend"]=self["webpackChunkfrontend"]||[]).push([[209],{9209:function(e,n,r){r.r(n),r.d(n,{default:function(){return c}});var t=r(6768);const a={class:"home"};function s(e,n,r,s,u,l){return(0,t.uX)(),(0,t.CE)("div",a,n[0]||(n[0]=[(0,t.Lk)("h1",null,"Bienvenue sur la web-app !",-1),(0,t.Lk)("p",null,"Trouvez des recettes adaptées à vos intolérances et allergies alimentaires.",-1)]))}var u={name:"HomePage"},l=r(1241);const o=(0,l.A)(u,[["render",s]]);var c=o}}]);
+//# sourceMappingURL=209.8299eb65.js.map

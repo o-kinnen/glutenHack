@@ -1,0 +1,2 @@
+"use strict";(self["webpackChunkfrontend"]=self["webpackChunkfrontend"]||[]).push([[494],{2494:function(n,e,i){i.r(e),i.d(e,{default:function(){return l}});var t=i(6768);const r={class:"terms-of-service"};function s(n,e,i,s,u,o){return(0,t.uX)(),(0,t.CE)("div",r,e[0]||(e[0]=[(0,t.Lk)("h1",null,"Conditions d'utilisation",-1),(0,t.Lk)("p",null,"Bienvenue sur notre site. Voici les conditions d'utilisation...",-1)]))}var u={name:"TermsOfService"},o=i(1241);const c=(0,o.A)(u,[["render",s]]);var l=c}}]);
+//# sourceMappingURL=494.852cdb12.js.map

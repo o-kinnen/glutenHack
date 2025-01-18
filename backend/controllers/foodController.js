@@ -8,14 +8,11 @@ const translate = new Translate({
   key: process.env.GOOGLE_TRANSLATE_API,
 });
 
-
 const verifierAliment = async (req, res) => {
   const { codeBarre } = req.query;
-
   if (!codeBarre) {
     return res.status(400).json({ error: 'Veuillez fournir un code-barre.' });
   }
-
   try {
     const barcodeData = await db.query(
       `
@@ -27,11 +24,8 @@ const verifierAliment = async (req, res) => {
       `,
       [codeBarre]
     );
-
     const imageUrl = `${process.env.URL_BACKEND}/uploads/analyse/${codeBarre}.jpg`;
     const imagePath = path.join(__dirname, '../uploads/analyse', `${codeBarre}.jpg`);
-
-
     if (barcodeData.rows.length > 0) {
       const barcodeInfo = {
         barcode: barcodeData.rows[0].barcode,
@@ -41,30 +35,26 @@ const verifierAliment = async (req, res) => {
           .filter(row => row.allergen_id) 
           .map(row => row.allergen_name),
       };
-
       return res.status(200).json({
         ...barcodeInfo,
         imageUrl: fs.existsSync(imagePath) ? imageUrl : null,
         source: "Les informations affichées proviennent de la base de données OpenFoodFacts.",
       });
     }
-
     const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${codeBarre}.json`);
     const allergenes = response.data.product?.allergens_tags || [];
+    const traces = response.data.product?.traces_tags || [];
     const nomAliment = response.data.product?.product_name || "Nom inconnu";
     const remoteImageUrl = response.data.product?.image_url || "";
-
-    const allergenesNettoyes = allergenes.map(a =>
+    const allergenesEtTraces = [...allergenes, ...traces];
+    const allergenesNettoyes = allergenesEtTraces.map(a =>
       a.replace(/^(en:|fr:)/, '').replace('_', ' ').toLowerCase()
     );
-
     const [allergenesTraduits] = await translate.translate(allergenesNettoyes, 'fr');
-
     await db.query(
       'INSERT INTO barcodes (barcode, barcode_name, created_at) VALUES ($1, $2, NOW())',
       [codeBarre, nomAliment]
     );
-
     if (remoteImageUrl) {
       try {
         await downloadImage(remoteImageUrl,`${codeBarre}.jpg`);
@@ -72,25 +62,20 @@ const verifierAliment = async (req, res) => {
         console.error("Erreur lors du téléchargement de l'image :", err);
       }
     }
-
     for (const allergen of allergenesTraduits) {
       const allergenLowerCase = allergen.toLowerCase();
-
       const existingAllergen = await db.query(
         'SELECT allergen_id FROM allergens WHERE LOWER(allergen_name) = $1',
         [allergenLowerCase]
       );
-
       if (existingAllergen.rows.length) {
         const allergenId = existingAllergen.rows[0].allergen_id;
-
         await db.query(
           'INSERT INTO barcode_allergens (barcode, allergen_id) VALUES ($1, $2)',
           [codeBarre, allergenId]
         );
       }
     }
-
     res.status(200).json({
       barcode: codeBarre,
       barcode_name: nomAliment,
@@ -107,13 +92,11 @@ const verifierAliment = async (req, res) => {
 const downloadImage = async (imageUrl, fileName) => {
   const filePath = path.join(__dirname, '../uploads/analyse', fileName);
   const writer = fs.createWriteStream(filePath);
-
   const response = await axios({
     url: imageUrl,
     method: 'GET',
     responseType: 'stream',
   });
-
   return new Promise((resolve, reject) => {
     response.data.pipe(writer);
     writer.on('finish', () => resolve(filePath));

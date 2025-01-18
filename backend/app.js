@@ -15,13 +15,10 @@ app.use(cors({
     origin: process.env.URL_FRONTEND,
     credentials: true
 }));
-
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 app.use('/users', userRoutes);
 app.use('/openai', openaiRoutes);
 app.use('/recipes', recipeRoutes);

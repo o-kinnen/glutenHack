@@ -1,6 +1,6 @@
 {
-    "name": "Ma Web-App",
-    "short_name": "WebApp",
+    "name": "CookAller",
+    "short_name": "CookAller",
     "description": "Une application web pour des recettes sans allergènes",
     "start_url": "/",
     "display": "standalone",
@@ -9,8 +9,8 @@
     "orientation": "portrait",
     "icons": [
       {
-        "src": "https://via.placeholder.com/192x192",
-        "sizes": "192x192",
+        "src": "/img/logo.png",
+        "sizes": "64x64 32x32 24x24 16x16",
         "type": "image/png"
       },
       {

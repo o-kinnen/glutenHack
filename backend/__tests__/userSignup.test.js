@@ -20,7 +20,6 @@ describe('User Signup Integration Test', () => {
         email: `testuser${Math.random()}@example.com`,
         password: 'TestPassword1!'
       });
-
     expect(response.status).toBe(201);
     expect(response.body.message).toBe('Utilisateur enregistré avec succès.');
   });
@@ -31,7 +30,6 @@ describe('User Signup Integration Test', () => {
       email: 'testuser@example.com',
       password: 'TestPassword1!',
     });
-
     const response = await request(app)
       .post('/users/signup')
       .send({
@@ -39,7 +37,6 @@ describe('User Signup Integration Test', () => {
         email: 'testuser@example.com',
         password: 'TestPassword1!'
       });
-
     expect(response.status).toBe(400);
     expect(response.body.message).toBe('Ce compte existe déjà.');
   }); 

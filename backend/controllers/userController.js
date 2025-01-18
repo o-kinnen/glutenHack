@@ -9,7 +9,14 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-
+const clarifaiApp = new Clarifai.App({
+  apiKey: `${process.env.CLARIFAI_API_KEY}`,
+});
+const upload = multer({ dest: 'uploads/' });
+const { Translate } = require('@google-cloud/translate').v2;
+const translate = new Translate({
+  key: process.env.GOOGLE_TRANSLATE_API,
+});
 
 exports.getAllUsers = async (req, res, next) => {
   try {
@@ -23,30 +30,24 @@ exports.getAllUsers = async (req, res, next) => {
 exports.signupUser = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
-
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: 'Ce compte existe déjà.' });
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, password: hashedPassword });
-
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 heure
-
     await pool.query(
       'INSERT INTO tokens (token, user_id, expires_at) VALUES ($1, $2, $3)',
       [token, newUser.user_id, expiresAt]
     );
-
     res.cookie('token', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'Lax',
       maxAge: 3600000,
     });
-
     res.status(201).json({ message: 'Utilisateur enregistré avec succès.' });
   } catch (error) {
     console.error('Erreur attrapée dans signupUser:', error.message);
@@ -54,38 +55,30 @@ exports.signupUser = async (req, res, next) => {
   }
 };
 
-
 exports.loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findByEmail(email);
-
     if (!user) {
       return res.status(404).json({ message: 'Compte non trouvé.' });
     }
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Mot de passe incorrect.' });
     }
-
     const restrictions = await User.getRestrictionsByUserId(user.user_id);
-
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 heure
-
     await pool.query(
       'INSERT INTO tokens (token, user_id, expires_at) VALUES ($1, $2, $3)',
       [token, user.user_id, expiresAt]
     );
-
     res.cookie('token', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'Lax',
       maxAge: 3600000,
     });
-
     res.status(200).json({
       message: 'Connexion réussie.',
       user: {
@@ -100,16 +93,13 @@ exports.loginUser = async (req, res, next) => {
   }
 };
 
-
 exports.profileUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.user_id);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
-
     const restrictions = await User.getRestrictionsByUserId(user.user_id);
-
     res.status(200).json({
       user_id: user.user_id,
       username: user.username,
@@ -125,11 +115,9 @@ exports.profileUser = async (req, res, next) => {
 exports.updateUserPreferences = async (req, res, next) => {
   const userId = req.params.id;
   const { restrictions } = req.body;
-
   if (!userId) {
     return res.status(400).json({ message: "L'ID de l'utilisateur est manquant." });
   }
-
   try {
     const allergenIds = [];
     for (const restriction of restrictions) {
@@ -138,7 +126,6 @@ exports.updateUserPreferences = async (req, res, next) => {
         allergenIds.push(result.rows[0].allergen_id);
       }
     }
-
     await User.updateRestrictions(userId, allergenIds);
     res.status(200).json({ message: 'Restrictions mises à jour avec succès.' });
   } catch (error) {
@@ -158,11 +145,9 @@ exports.checkAuth = async (req, res) => {
 
 exports.logoutUser = async (req, res) => {
   const token = req.cookies.token;
-
   if (!token) {
     return res.status(401).json({ message: 'Accès non autorisé.' });
   }
-
   try {
     await pool.query('DELETE FROM tokens WHERE token = $1', [token]);
     res.clearCookie('token');
@@ -179,13 +164,9 @@ exports.deleteUser = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
-
     await User.delete(user.user_id);
-
     await pool.query('DELETE FROM tokens WHERE user_id = $1', [user.user_id]);
-
     res.clearCookie('token');
-
     res.status(200).json({ 
       message: 'Compte utilisateur supprimé avec succès. Les recettes publiques ont été anonymisées, et les recettes privées ont été supprimées.' 
     });
@@ -261,7 +242,6 @@ exports.verifyResetToken = (req, res) => {
   if (!token) {
     return res.status(400).json({ message: 'Token manquant' });
   }
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     res.status(200).json({ success: true, message: 'Token valide' });
@@ -274,7 +254,6 @@ exports.getRestrictionsByUserId = async (req, res) => {
   try {
     const userId = req.user.user_id;
     const restrictions = await User.getRestrictionsByUserId(userId);
-
     return res.status(200).json({ restrictions });
   } catch (error) {
     console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
@@ -285,7 +264,6 @@ exports.getRestrictionsByUserId = async (req, res) => {
 exports.addFoodToFridge = async (req, res) => {
   const { foodName, quantity } = req.body;
   const userId = req.user.user_id;
-
   try {
     await User.addFoodToFridge(userId, foodName, quantity);
     res.status(200).json({ message: 'Aliment ajouté au réfrigérateur avec succès.' });
@@ -313,7 +291,6 @@ exports.getFridgeContents = async (req, res) => {
 exports.removeFoodFromFridge = async (req, res) => {
   const userId = req.user.user_id;
   const { foodName } = req.query;
-
   try {
     await User.removeFoodFromFridge(userId, foodName);
     res.status(200).json({ message: 'Aliment supprimé du réfrigérateur avec succès.' });
@@ -330,7 +307,6 @@ exports.removeFoodFromFridge = async (req, res) => {
 exports.updateFoodQuantity = async (req, res) => {
   const { foodName, quantity, unit } = req.body;
   const userId = req.user.user_id;
-
   try {
     await User.updateFoodQuantity(userId, foodName, quantity, unit);
     res.status(200).json({ message: 'Quantité de l\'aliment mise à jour avec succès.' });
@@ -340,18 +316,6 @@ exports.updateFoodQuantity = async (req, res) => {
   }
 };
 
-const clarifaiApp = new Clarifai.App({
-  apiKey: `${process.env.CLARIFAI_API_KEY}`,
-});
-
-const upload = multer({ dest: 'uploads/' });
-
-const { Translate } = require('@google-cloud/translate').v2;
-
-const translate = new Translate({
-  key: process.env.GOOGLE_TRANSLATE_API,
-});
-
 exports.analyzeImage = [
   upload.single('image'),
   async (req, res) => {
@@ -359,29 +323,21 @@ exports.analyzeImage = [
       if (!req.file) {
         return res.status(400).json({ success: false, message: 'Aucun fichier fourni.' });
       }
-
       const imagePath = path.join(__dirname, '../', req.file.path);
       const imageBase64 = fs.readFileSync(imagePath, { encoding: 'base64' });
-
       const response = await clarifaiApp.models.predict('food-item-recognition', { base64: imageBase64 });
-
       fs.unlinkSync(imagePath);
-
       const concepts = response.outputs[0].data.concepts;
-
       const aliments = concepts.map(item => ({
         name: item.name,
         probability: item.value,
       }));
-
       const namesToTranslate = aliments.map(aliment => aliment.name);
       const [translations] = await translate.translate(namesToTranslate, 'fr');
-
       const translatedAliments = aliments.map((aliment, index) => ({
         ...aliment,
         name: translations[index]
       }));
-
       res.status(200).json({
         success: true,
         data: translatedAliments

@@ -1,51 +1,43 @@
 <template>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card p-4 text-white">
-                    <h2 class="mb-4 text-center">Réinitialiser le mot de passe</h2>
-                    <Form v-if="tokenValid" @submit="resetPassword" class="resetPassword-form">
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Mot de passe</label>
-                            <Field 
-                                id="password" 
-                                name="password" 
-                                type="password" 
-                                class="form-control" 
-                                v-model="password"
-                                rules="required|min:8|passwordUppercase|passwordLowercase|passwordNumber|passwordSpecial|noSpaces"
-                            />
-                            <ErrorMessage name="password" class="text-danger"/>
-                        </div>
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">Répéter le mot de passe</label>
-                            <Field 
-                                id="confirmPassword" 
-                                name="confirmPassword" 
-                                type="password" 
-                                class="form-control" 
-                                v-model="confirmPassword"
-                                rules="required|matches:password"
-                            />
-                            <ErrorMessage name="confirmPassword" class="text-danger"/>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Réinitialiser le mot de passe</button>
-                    </Form>
-                    <div v-if="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
-                    <div v-if="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
-                    <div v-if="!tokenValid && !successMessage" class="alert alert-danger mt-3">
-                        Le lien de réinitialisation est invalide ou a expiré.
-                    </div>
+    <div class="container">
+        <div class="card p-4 text-white">
+            <h2 class="mb-4 text-center">Réinitialiser le mot de passe</h2>
+            <Form v-if="tokenValid" @submit="resetPassword" class="resetPassword-form">
+                <div class="mb-3">
+                    <label for="password" class="form-label">Mot de passe</label>
+                    <Field 
+                        id="password" 
+                        name="password" 
+                        type="password" 
+                        class="form-control" 
+                        v-model="password"
+                        rules="required|min:8|passwordUppercase|passwordLowercase|passwordNumber|passwordSpecial|noSpaces"
+                    />
+                    <ErrorMessage name="password" class="text-danger"/>
                 </div>
-            </div>
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Répéter le mot de passe</label>
+                    <Field 
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        type="password" 
+                        class="form-control" 
+                        v-model="confirmPassword"
+                        rules="required|matches:password"
+                    />
+                    <ErrorMessage name="confirmPassword" class="text-danger"/>
+                </div>
+                <button type="submit" class="button btn">Réinitialiser le mot de passe</button>
+            </Form>
+            <div v-if="message" :class="alertClass" class="alert mt-3">{{ message }}</div>
         </div>
     </div>
 </template>
   
 <script>
+import axios from 'axios';
 import { defineRule } from 'vee-validate';
-import { Form, Field, ErrorMessage } from 'vee-validate';
-  
+import { Form, Field, ErrorMessage } from 'vee-validate'; 
 defineRule('required', value => {
     return value ? true : 'Veuillez remplir ce champ correctement.';
 });
@@ -73,7 +65,6 @@ defineRule('passwordSpecial', (value) => {
 defineRule('noSpaces', (value) => {
     return !/\s/.test(value) || "Le mot de passe ne doit pas contenir d'espaces.";
 });
-  
 export default {
     name: 'ResetPassword',
     components: {
@@ -85,50 +76,63 @@ export default {
         return {
             password: '',
             confirmPassword: '',
-            errorMessage: '',
-            successMessage: '',
+            message: '',
             token: this.$route.query.token,
             tokenValid: false
         };
     },
     async created() {
         try {
-            const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/verify-reset-token?token=${this.token}`);
-            const data = await response.json();
+            const { data } = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/verify-reset-token`, {
+                params: { token: this.token },
+                withCredentials: true,
+            });
             if (data.success) {
                 this.tokenValid = true;
             } else {
-                this.errorMessage = data.message || 'Le lien de réinitialisation est invalide ou a expiré.';
+                this.message = 'Le lien de réinitialisation est invalide ou a expiré.';
             }
         } catch (error) {
-            this.errorMessage = 'Erreur lors de la vérification du token. Veuillez réessayer plus tard.';
+            this.handleError(error, 'Le lien de réinitialisation est invalide ou a expiré.');
+        }
+    },
+    computed: {
+        alertClass() {
+            return this.message.includes('succès') ? 'alert-success' : 'alert-danger';
         }
     },
     methods: {
         async resetPassword () {
             try {
-                const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/reset-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+                const { data } = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/reset-password`, {
                     token: this.token,
-                    newPassword: this.password
-                }),
-                credentials: 'include'
-                })
-                const data = await response.json()
+                    newPassword: this.password,
+                }, {
+                    withCredentials: true,
+                });
+                
                 if (data.success) {
-                    this.successMessage = 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.'
+                    this.message = 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.';
                     setTimeout(() => {
-                    this.$router.push('/login')
-                }, 1500)
+                        this.$router.push('/login');
+                    }, 1500);
                 } else {
-                    this.errorMessage = data.message || 'Erreur lors de la réinitialisation du mot de passe.'
+                    this.message = 'Erreur lors de la réinitialisation du mot de passe.';
                 }
             } catch (error) {
-                this.errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.'
+                this.handleError(error, 'Erreur lors de la réinitialisation du mot de passe.');
             }
-        } 
+        },
+        handleError(error, userMessage) {
+            if (error.response && error.response.data && error.response.data.message) {
+                this.message = error.response.data.message;
+            } else {
+                this.message = userMessage;
+            }
+            if (process.env.NODE_ENV !== 'production') {
+                console.error('API Error:', error);
+            }
+        },
     }
 }
 </script>
@@ -141,6 +145,12 @@ export default {
     max-width: 400px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 button.btn {
     background-color: #BA9371;

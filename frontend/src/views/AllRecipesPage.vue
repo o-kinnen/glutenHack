@@ -1,115 +1,209 @@
 <template>
-  <div class="recipe-page">
-    <h2>Toutes les recettes</h2>
-    <div class="allergen-filters">
-      <label>
-        <input type="checkbox" value="Gluten" v-model="selectedAllergens" />
-        Sans Gluten
-      </label>
-      <label>
-        <input type="checkbox" value="Lactose" v-model="selectedAllergens" />
-        Sans Lactose
-      </label>
-      <label>
-        <input type="checkbox" value="Oeuf" v-model="selectedAllergens" />
-        Sans Oeuf
-      </label>
-      <label>
-        <input type="checkbox" value="Arachide" v-model="selectedAllergens" />
-        Sans Arachide
-      </label>
-      <label>
-        <input type="checkbox" v-model="showProfileFilter" @change="filterRecipes" />
-        Mon profil
-      </label>
-    </div>
-    <p v-if="showProfileFilter && userAllergens.length === 0" style="text-align: center;">
-      Seules les recettes sans mention d'allergènes sont affichées car vous n'avez
-      spécifié aucun allergène dans votre profil.
-    </p>
-    <div>
-      <button @click="toggleFavorites">
-        {{ showFavorites ? 'Afficher toutes les recettes' : 'Afficher mes favoris' }}
-      </button>
-    </div>
-    <div v-if="recipes.length === 0" class="no-recipes">
-      <p>Aucune recette n'a été enregistrée pour le moment.</p>
-    </div>
-    <div v-else class="recipes-list">
-      <div v-for="recipe in filteredRecipes" :key="recipe.recipe_id" class="recipe-card">
-        <h3>{{ recipe.recipe_name }}</h3>
-        <div class="favorite-icon" v-if="recipe.isFavorite">
-          <i class="bi bi-heart-fill" style="color: red;"></i>
-        </div>
-        <img v-if="recipe.image_url" :src="recipe.image_url" alt="Image de la recette" class="modal-recipe-image" />
-        <button @click="openModal(recipe)">Voir les détails</button>
-        <div v-if="getMissingAllergens(recipe).length > 0" class="attention-warning">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-          <p>
-            Ces allergènes ne sont pas pris en compte dans cette recette :
-            <strong>{{ getMissingAllergens(recipe).join(', ') }}</strong>.
-          </p>
+  <div class="container">
+    <div class="card p-4 text-white">
+      <h2>Toutes les recettes</h2>
+      <div v-if="recipes.length === 0" class="no-recipes">
+        <p>Aucune recette a été rendue public par les autres utilisateurs pour le moment...</p>
+      </div>
+      <div v-else class="buttons-container">
+        <button @click="showFilterModal = true" class="filter-button">
+          Allergènes
+        </button>
+        <button @click="toggleFavorites">
+          {{ showFavorites ? 'Toutes les recettes' : 'Favoris' }}
+        </button>
+        <button 
+          @click="toggleProfileFilter" 
+          class="profile-button" 
+          :class="{ active: showProfileFilter }"
+        >
+          {{ showProfileFilter ? 'Toutes les recettes' : 'Mon profil' }}
+        </button>
+      </div>
+      <div v-if="showFilterModal" class="modal-overlay">
+        <div class="modal-content">
+          <div class="modal-filters">
+            <label>
+              <input type="checkbox" value="Gluten" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/gluten.png" alt="Icone" class="restriction-icon" />
+                  Gluten
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Lait" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/lait.png" alt="Icone" class="restriction-icon" />
+                  Lait
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Oeufs" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/oeufs.png" alt="Icone" class="restriction-icon" />
+                  Oeufs
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Arachide" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/arachide.png" alt="Icone" class="restriction-icon" />
+                  Arachide
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Fruits à coque" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/noix.png" alt="Icone" class="restriction-icon" />
+                  Noix
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Poissons" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/poissons.png" alt="Icone" class="restriction-icon" />
+                  Poissons
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Soja" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/soja.png" alt="Icone" class="restriction-icon" />
+                  Soja
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Crustacés" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/crustacés.png" alt="Icone" class="restriction-icon" />
+                  Crustacés
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Moutarde" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/moutarde.png" alt="Icone" class="restriction-icon" />
+                  Moutarde
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" value="Céleri" v-model="selectedAllergens" />
+              <span class="text-and-icon">
+                <img src="/img/céleri.png" alt="Icone" class="restriction-icon" />
+                  Céleri
+              </span>
+            </label>
+          </div>
+          <div class="modal-actions">
+            <button @click="showFilterModal = false" class="close-button">Fermer</button>
+          </div>
         </div>
       </div>
-    </div>
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <button class="close-btn" @click="closeModal">X</button>
-        <h3 style="text-align: center;">{{ currentRecipe.recipe_name }}</h3>
-        <img v-if="currentRecipe.image_url" :src="currentRecipe.image_url" alt="Image de la recette" class="recipe-image" />
-        <div class="recipe-info-container">
-          <div class="recipe-info-line">
-            <div class="info-item"><strong>Généré par l'IA :</strong> {{ currentRecipe.created_by_ai ? 'Oui' : 'Non' }}</div>
-            <div class="info-item"><strong>Temps de préparation:</strong> {{ currentRecipe.preparation_time }}</div>
-            <div class="info-item"><strong>Difficulté:</strong> {{ currentRecipe.difficulty }}</div>
-            <div class="info-item"><strong>Nombre de personnes:</strong> {{ currentRecipe.number_of_person }}</div>
+      <div v-if="showProfileFilter && userAllergens.length === 0" class="no-recipes">
+        <p>Seules les recettes sans mention d'allergènes sont affichées car vous n'avez spécifié aucun allergène dans votre profil.</p>
+      </div>
+      <div v-if="(showFavorites && filteredRecipes.length === 0) || (filteredRecipes.length === 0 && recipes.length !== 0)" class="no-recipes">
+        <p>Aucune recette trouvée...</p>
+      </div>
+      <div v-else class="recipes-list">
+        <div v-for="recipe in filteredRecipes" :key="recipe.recipe_id" class="recipe-card">
+          <h3>{{ recipe.recipe_name }}</h3>
+          <div class="favorite-icon" v-if="recipe.isFavorite">
+            <i class="bi bi-heart-fill" style="color: red;"></i>
           </div>
-          <div class="recipe-info-line">
-            <div class="info-item"><strong>Cuisine:</strong> {{ currentRecipe.cuisine_type }}</div>
-            <div class="info-item"><strong>Type:</strong> {{ currentRecipe.category_type }}</div>
-            <div class="info-item">
-              <strong>Sans allergène :</strong> {{ currentRecipe.allergens_list?.join(', ') || 'Pas de mention' }}
+          <img v-if="recipe.image_url" :src="recipe.image_url" alt="Image de la recette" class="modal-recipe-image" />
+          <button @click="openModal(recipe)">Voir les détails</button>
+          <div v-if="getMissingAllergens(recipe).length > 0" class="attention-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <p>
+              Ces allergènes ne sont pas pris en compte dans cette recette :
+              <strong>{{ getMissingAllergens(recipe).join(', ') }}</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div v-if="showModal" class="modal-overlay">
+        <div class="modal-content-recipe">
+          <h3 style="text-align: center;">{{ currentRecipe.recipe_name }}</h3>
+          <img v-if="currentRecipe.image_url" :src="currentRecipe.image_url" alt="Image de la recette" class="recipe-image" />
+          <div class="recipe-info-container">
+            <div class="recipe-info-line">
+              <div class="info-item"><strong>Préparation:</strong><br> {{ currentRecipe.preparation_time }}</div>
+              <div class="info-item"><strong>Difficulté:</strong><br> {{ currentRecipe.difficulty }}</div>
+              <div class="info-item"><strong>Part(s):</strong><br> {{ currentRecipe.number_of_person }}</div>
+            </div>
+            <div class="recipe-info-line">
+              <div class="info-item"><strong>Cuisine:</strong><br> {{ currentRecipe.cuisine_type }}</div>
+              <div class="info-item"><strong>Type:</strong><br> {{ currentRecipe.category_type }}</div>
+              <div class="info-item">
+                <strong>Sans allergène :</strong><br>
+                <span v-if="currentRecipe.allergens_list?.length">
+                  <img 
+                    v-for="(allergen, index) in currentRecipe.allergens_list" 
+                    :key="index" 
+                    :src="getAllergenIcon(allergen)" 
+                    :alt="allergen" 
+                    :title="allergen"
+                    class="allergen-icon"
+                  />
+                </span>
+                <span v-else>Pas de mention</span>
+              </div>
             </div>
           </div>
-        </div>
-        <h4>Ingrédients</h4>
-        <ul>
-          <li v-for="(ingredient, index) in currentRecipe.ingredients" :key="index">
-            {{ ingredient.quantity }} {{ ingredient.food_name }}
-          </li>
-        </ul>
-        <h4>Instructions</h4>
-        <ol>
-          <li v-for="(step, index) in formattedInstructionsArray" :key="index">
-            {{ step }}
-          </li>
-        </ol>
-        <p style="text-align: center;" v-if="currentRecipe.averageRating === 0">Cette recette n'a pas encore été notée.</p>
-        <p style="text-align: center;" v-else>Voici la note reçue de la recette.</p>
-        <div class="average-rating">
-          <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= currentRecipe.averageRating }">
-          ★
-          </span>
-        </div>
-        <div class="rating-container">
-          <p style="text-align: center;">Noter la recette ?</p>
-          <div class="stars">
-            <span 
-            v-for="star in 5" 
-            :key="star" 
-            class="star" 
-            :class="{ filled: star <= currentRecipe.rating }"
-            @click="rateRecipe(star)"
-            >
-            ★
+          <h4>Ingrédients</h4>
+          <ul>
+            <li v-for="(ingredient, index) in currentRecipe.ingredients" :key="index">
+              {{ ingredient.quantity }} {{ ingredient.food_name }}
+            </li>
+          </ul>
+          <h4>Instructions</h4>
+          <ol>
+            <li v-for="(step, index) in formattedInstructionsArray" :key="index">
+              {{ step }}
+            </li>
+          </ol>
+          <p style="text-align: center;" v-if="currentRecipe.averageRating === 0">Cette recette n'a pas encore été notée.</p>
+          <p style="text-align: center;" v-else>Voici la note reçue de la recette.</p>
+          <div class="average-rating">
+            <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= currentRecipe.averageRating }">
+              ★
             </span>
           </div>
+          <div class="rating-container">
+            <p style="text-align: center;">Noter la recette ?</p>
+            <div class="stars">
+              <span 
+                v-for="star in 5" 
+                :key="star" 
+                class="star" 
+                :class="{ filled: star <= currentRecipe.rating }"
+                @click="rateRecipe(star)"
+              >
+                ★
+              </span>
+            </div>
+          </div>
+          <div class="modal-actions-icons">
+            <i class="bi bi-heart-fill icon-action" 
+              :class="{ active: isFavorite }" 
+              @click="isFavorite ? removeFromFavorites() : addToFavorites()" 
+              title="Ajouter/Retirer des favoris">
+            </i>
+            <i class="bi bi-cart-fill icon-action" 
+              @click="addToShoppingList" 
+              title="Ajouter à la liste des courses">
+            </i>
+            <i class="bi bi-file-earmark-pdf-fill icon-action" 
+              @click="generatePDF" 
+              title="Exporter en PDF">
+            </i>
+            <i class="bi bi-x-lg icon-action" 
+              @click="closeModal" 
+              title="Fermer">
+            </i>
+          </div>
         </div>
-        <button v-if="!isFavorite" @click="addToFavorites">Ajouter aux favoris</button>
-        <button v-else @click="removeFromFavorites">Retirer des favoris</button><br>
-        <button @click="addToShoppingList">Ajouter à la liste des courses</button><br>
-        <button @click="generatePDF">Exporter en PDF</button><br>
-        <button @click="closeModal">Fermer</button>
       </div>
     </div>
   </div>
@@ -132,6 +226,7 @@ export default {
       errorMessage: '',
       isFavorite: false,
       showFavorites: false,
+      showFilterModal: false
     };
   },
   computed: {
@@ -144,22 +239,40 @@ export default {
       this.showFavorites = !this.showFavorites;
       this.filterRecipes();
     },
+    toggleProfileFilter() {
+      this.showProfileFilter = !this.showProfileFilter;
+      this.filterRecipes();
+    },
+    getAllergenIcon(allergen) {
+      const allergenIcons = {
+        Gluten: '/img/gluten.png',
+        Lait: '/img/lait.png',
+        Oeufs: '/img/oeufs.png',
+        Arachide: '/img/arachide.png',
+        Noix: '/img/noix.png',
+        Poissons: '/img/poissons.png',
+        Soja: '/img/soja.png',
+        Crustacés: '/img/crustacés.png',
+        Moutarde: '/img/moutarde.png',
+        Céleri: '/img/céleri.png',
+      };
+      return allergenIcons[allergen] || '/img/plat.png';
+    },
     filterRecipes() {
       this.filteredRecipes = this.recipes.filter((recipe) => {
       const matchesFavorites = this.showFavorites ? recipe.isFavorite : true;
-
       const matchesAllergens = this.selectedAllergens.every(
         (allergen) => recipe.allergens_list?.includes(allergen)
       );
-
       const matchesProfile = this.showProfileFilter
-          ? this.userAllergens.length === 0
-          ? !recipe.allergens_list || recipe.allergens_list.length === 0
-          : this.userAllergens.every((allergen) =>
-              recipe.allergens_list?.includes(allergen)
-            )
-        : true;
-
+        ? this.userAllergens.length === 0
+        ? !recipe.allergens_list || 
+        recipe.allergens_list.length === 0 || 
+        recipe.allergens_list.includes("Pas de mention")
+        : this.userAllergens.every((allergen) =>
+          recipe.allergens_list?.includes(allergen)
+        )
+      : true;
         return matchesFavorites && matchesAllergens && matchesProfile;
       });
     },
@@ -184,32 +297,27 @@ export default {
         alert("Aucune recette sélectionnée pour générer le PDF.");
         return;
       }
-
       const doc = new jsPDF();
       let currentY = 10;
-
       doc.setFontSize(20);
       doc.text(this.currentRecipe.recipe_name, 10, currentY);
       currentY += 10;
-
       doc.setFontSize(12);
-      doc.text(`Temps de préparation: ${this.currentRecipe.preparation_time}`, 10, currentY);
+      doc.text(`Préparation: ${this.currentRecipe.preparation_time}`, 10, currentY);
       currentY += 10;
       doc.text(`Difficulté: ${this.currentRecipe.difficulty}`, 10, currentY);
       currentY += 10;
-      doc.text(`Nombre de personnes: ${this.currentRecipe.number_of_person}`, 10, currentY);
+      doc.text(`Part(s): ${this.currentRecipe.number_of_person}`, 10, currentY);
       currentY += 10;
       doc.text(`Cuisine: ${this.currentRecipe.cuisine_type}`, 10, currentY);
       currentY += 10;
       doc.text(`Type: ${this.currentRecipe.category_type}`, 10, currentY);
       currentY += 10;
-
       const allergens = this.currentRecipe.allergens_list?.length
         ? this.currentRecipe.allergens_list.join(", ")
         : "Aucun allergène spécifié.";
       doc.text(`Sans allergène: ${allergens}`, 10, currentY);
       currentY += 10;
-
       if (this.currentRecipe.image_url) {
         try {
           const imageBase64 = await this.convertImageToBase64(this.currentRecipe.image_url);
@@ -219,7 +327,6 @@ export default {
           console.error("Erreur lors du chargement de l'image :", error);
         }
       }
-
       doc.setFontSize(14);
       doc.text("Ingrédients:", 10, currentY);
       currentY += 10;
@@ -228,19 +335,16 @@ export default {
         doc.text(`${ingredient.quantity} ${ingredient.food_name}`, 10, currentY);
         currentY += 10;
       });
-
       doc.setFontSize(14);
       doc.text("Instructions:", 10, currentY);
       currentY += 10;
       doc.setFontSize(12);
-
       const lineHeight = 10;
       this.formattedInstructionsArray.forEach((step, index) => {
         const textLines = doc.splitTextToSize(`${index + 1}. ${step}`, 190);
         doc.text(textLines, 10, currentY);
         currentY += textLines.length * lineHeight;
       });
-
       doc.save(`${this.currentRecipe.recipe_name}.pdf`);
     },
     async rateRecipe(star) {
@@ -248,12 +352,10 @@ export default {
         if (!this.currentRecipe?.recipe_id) {
           throw new Error('Aucune recette sélectionnée.');
         }
-
         const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/recipes/rate`, {
           recipeId: this.currentRecipe.recipe_id,
           rating: star,
         }, { withCredentials: true });
-
         alert(response.data.message || 'Note enregistrée avec succès.');
         this.currentRecipe.rating = star;
         await this.fetchAverageRating(this.currentRecipe.recipe_id);
@@ -283,12 +385,10 @@ export default {
           withCredentials: true,
         });
         const favoriteIds = favoritesResponse.data.map(fav => fav.recipe_id);
-
         this.recipes = response.data.map(recipe => ({
           ...recipe,
           isFavorite: favoriteIds.includes(recipe.recipe_id),
         }));
-
         this.filterRecipes();
       } catch (error) {
         console.error('Erreur lors de la récupération des recettes :', error);
@@ -300,7 +400,6 @@ export default {
         if (!this.currentRecipe?.recipe_id) {
           throw new Error("Aucune recette sélectionnée pour ajouter aux favoris.");
         }
-
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/recipes/favorites/add`,
           {
@@ -309,17 +408,13 @@ export default {
           { withCredentials: true }
         );
         alert(response.data.message || 'Recette ajoutée aux favoris avec succès.');
-
         this.isFavorite = true;
         this.currentRecipe.isFavorite = true;
-
         const recipeIndex = this.recipes.findIndex(r => r.recipe_id === this.currentRecipe.recipe_id);
         if (recipeIndex !== -1) {
           this.recipes[recipeIndex].isFavorite = true;
         }
-
         this.filterRecipes();
-
       } catch (error) {
         if (error.response && error.response.status === 409) {
           alert('Cette recette est déjà dans vos favoris.');
@@ -351,16 +446,12 @@ export default {
           { withCredentials: true }
         );
         alert(response.data.message || 'Recette retirée des favoris avec succès.');
-
         this.isFavorite = false;
         this.currentRecipe.isFavorite = false;
-
         const recipeIndex = this.recipes.findIndex(r => r.recipe_id === this.currentRecipe.recipe_id);
-
         if (recipeIndex !== -1) {
           this.recipes[recipeIndex].isFavorite = false;
         }
-
         this.filterRecipes();
       } catch (error) {
         console.error("Erreur lors du retrait des favoris :", error);
@@ -375,7 +466,6 @@ export default {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
         withCredentials: true
       });
-
       return response.data.restrictions || [];
       } catch (error) {
         console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
@@ -393,7 +483,7 @@ export default {
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/shopping-list/add`,
           {
-            recipeId: this.currentRecipe.recipe_id
+            recipeId: this.currentRecipe.recipe_id,
           },
           { withCredentials: true }
         );
@@ -406,7 +496,6 @@ export default {
     async openModal(recipe) {
       this.currentRecipe = { ...recipe, rating: recipe.rating || 0 };
       this.showModal = true;
-
       if (this.currentRecipe?.recipe_id) {
         await this.fetchAverageRating(this.currentRecipe.recipe_id);
         await this.checkIfFavorite(this.currentRecipe.recipe_id);
@@ -434,8 +523,22 @@ export default {
 </script>
 
 <style scoped>
-.recipe-page {
-  text-align: center;
+.card {
+  background-color: #212121;
+  border: none;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 100%;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .recipes-list {
   display: flex;
@@ -444,7 +547,7 @@ export default {
   gap: 20px;
 }
 .recipe-card {
-  background: #222;
+  background: #171717;
   color: #fff;
   padding: 20px;
   border-radius: 10px;
@@ -470,23 +573,22 @@ button:hover {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
+  justify-content: center;
+  z-index: 9999;
 }
 .modal-content {
-  max-height: 90vh;
-  overflow-y: auto;
-  background: #212121;
+  background-color: #212121;
+  color: #fff;
   padding: 20px;
-  border-radius: 10px;
-  width: 80%;
-  max-width: 700px;
-  text-align: left;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  animation: fadeIn 0.3s ease-out;
 }
 .close-btn {
   background: none;
@@ -576,10 +678,10 @@ button:hover {
   transition: color 0.2s;
 }
 .star.filled {
-  color: #f39c12;
+  color: #C56929;
 }
 .star:hover {
-  color: #f1c40f;
+  color: #C56929;
 }
 .average-rating {
   display: flex;
@@ -592,7 +694,7 @@ button:hover {
   color: #ccc;
 }
 .average-rating .star.filled {
-  color: #f39c12;
+  color: #C56929;
 }
 .allergen-filters {
   display: flex;
@@ -636,8 +738,8 @@ input[type="checkbox"] {
   position: relative;
 }
 input[type="checkbox"]:checked {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: #C56929;
+  border-color: #C56929;
 }
 input[type="checkbox"]:checked::after {
   content: "✓";
@@ -647,5 +749,117 @@ input[type="checkbox"]:checked::after {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal-content {
+  background-color: #212121;
+  color: #fff;
+  padding: 30px;
+  border-radius: 15px;
+  max-width: 500px;
+  width: 100%;
+  animation: fadeIn 0.3s ease-out;
+}
+.modal-content-recipe {
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #212121;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 700px;
+  text-align: left;
+}
+.modal-filters {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.modal-filters label {
+  display: flex;
+  font-size: 18px;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.text-and-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.restriction-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+}
+.restriction-icon:hover {
+  transform: scale(1.2);
+  opacity: 0.8;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.modal-actions-icons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+.icon-action {
+  font-size: 24px;
+  color: #BA9371;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.3s ease;
+}
+.icon-action:hover {
+  transform: scale(1.2);
+  color: #C56929;
+}
+.icon-action.active {
+  color: red;
+}
+.allergen-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.allergen-icon:hover {
+  transform: scale(1.2);
 }
 </style>

@@ -1,65 +1,85 @@
 <template>
-  <div class="add-ingredients-container">
-    <div class="add-ingredients">
-      <h4>Ajouter des ingrédients :</h4>
-
+  <div class="container">
+    <div class="card p-4 text-white">
+      <h1>Ingrédients en stock </h1>
+      <p>Entrez un ingrédient ou un code-barres pour l'ajouter à votre stock.</p>
+      <div class="camera-container d-flex flex-column justify-content-center align-items-center">
+        <video id="scanner" class="camera-feed"></video>
+        <button @click="activerScanner" class="btn btn-secondary mt-2">Scanner</button>
+      </div>
+      <br>
+      <div class="input-text">
+        <input type="text" v-model="newIngredient" placeholder="Ingrédient ou code-barres" :disabled="isLoading" />
+      </div>
       <div class="input-container">
-        <input type="text" v-model="newIngredient" placeholder="Entrez un ingrédient ou un code-barre" :disabled="isLoading" />
-        <input v-model="newQuantity" type="number" min="1" placeholder="Quantité" :disabled="isLoading"/>
+        <input v-model="newQuantity" type="number" min="1" placeholder="Quantité" :disabled="isLoading" class="quantity-input"/>
         <select v-model="newUnit" :disabled="isLoading">
-          <option value="">Unités (optionnel)</option>
+          <option value="">Unités</option>
           <option value="g">g</option>
-          <option value="ml">ml</option>
           <option value="kg">kg</option>
+          <option value="ml">ml</option>
           <option value="l">l</option>
         </select>
-        <button @click="addIngredient" :disabled="isLoading">Ajouter</button>
+        <div class="modal-actions-icons">
+          <i class="bi bi-plus-circle-fill icon-action" 
+            @click="addIngredient" 
+            title="Ajouter">
+          </i>
+        </div>
       </div>
-      <!--
-      <div class="search-container">
-        <input v-model="searchIngredient" placeholder="Rechercher un ingrédient" />
-        <button @click="sortIngredientsByCategory" class="sort-button">Trier par catégorie</button>
-      </div>
-      -->
       <div class="upload-container">
         <h5>Uploader une photo :</h5>
         <input type="file" @change="onFileChange" accept="image/*" />
         <div v-if="imageUrl" class="image-preview">
           <img :src="imageUrl" alt="Aperçu de l'image" />
         </div>
-        <button @click="analyzeImage" :disabled="!imageFile || isLoading">Analyser</button>
       </div>
-
-      <div v-if="analysisResult.length > 0" class="analysis-results">
-        <h5>Résultats de l'analyse :</h5>
-        <div class="analysis-grid">
-          <div class="grid-header">
-            <span>Sélection</span>
-            <span>Aliment</span>
-            <span>Probabilité</span>
-            <span>Quantité</span>
-            <span>Unités</span>
-          </div>
-          <div v-for="(item, index) in analysisResult" :key="index" class="grid-row">
-            <input type="checkbox" v-model="item.selected" />
-            <span>{{ item.name }}</span>
-            <span>{{ (item.probability * 100).toFixed(2) }}%</span>
-            <input v-model="item.quantity" type="number" min="1" placeholder="Quantité" class="quantity-input" :class="{ 'error': item.selected && (!item.quantity || parseFloat(item.quantity) <= 0) }"/>
-            <div v-if="errorMessage" class="error-message">
-              {{ errorMessage }}
+      <button @click="analyzeImage" :disabled="!imageFile || isLoading" class="analyze-button">Analyser</button>
+      <div v-if="isLoading" class="loading-spinner">Chargement...</div>
+      <div class="search-container">
+        <input v-model="searchIngredient" placeholder="Rechercher" />
+        <!--
+        <button @click="sortIngredientsByCategory" class="sort-button">Trier</button>
+        -->
+      </div>
+      <br>
+      <div v-if="ingredients.length === 0" class="empty-message">
+        La liste des ingrédients est vide...
+      </div>
+      <div v-if="showModal" class="modal-overlay">
+        <div class="modal-content">
+          <button class="close-btn" @click="closeModal">X</button>
+          <div v-if="analysisResult.length > 0" class="analysis-results">
+            <h5>Résultats de l'analyse :</h5>
+            <div class="analysis-grid">
+              <div class="grid-header">
+                <span>Sélection</span>
+                <span>Aliment</span>
+                <span>Probabilité</span>
+                <span>Quantité</span>
+                <span>Unités</span>
+              </div>
+              <div v-for="(item, index) in analysisResult" :key="index" class="grid-row">
+                <input type="checkbox" v-model="item.selected" />
+                <span>{{ item.name }}</span>
+                <span>{{ (item.probability * 100).toFixed(2) }}%</span>
+                <input v-model="item.quantity" type="number" min="1" placeholder="Quantité" class="quantity-input" :class="{ 'error': item.selected && (!item.quantity || parseFloat(item.quantity) <= 0) }"/>
+                <div v-if="errorMessage" class="error-message">
+                  {{ errorMessage }}
+                </div>
+                <select v-model="item.unit" class="unit-select">
+                  <option value="">Unités</option>
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
+                  <option value="kg">kg</option>
+                  <option value="l">l</option>
+                </select>
+              </div>
             </div>
-            <select v-model="item.unit" class="unit-select">
-              <option value="">Unités (optionnel)</option>
-              <option value="g">g</option>
-              <option value="ml">ml</option>
-              <option value="kg">kg</option>
-              <option value="l">l</option>
-            </select>
+            <button @click="validateSelection" class="button align-center">Ajouter</button>
           </div>
         </div>
-        <button @click="validateSelection" class="button">Valider</button>
       </div>
-
       <div v-if="sortByCategory" class="ingredient-list">
         <div v-for="(categoryGroup, category) in categorizedIngredients" :key="category" class="category-group">
           <h5 class="category-title">{{ category }}</h5>
@@ -70,10 +90,24 @@
                 <div class="ingredient-quantity">{{ ingredient.quantity }}</div>
               </div>
               <div class="ingredient-actions">
-                <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" />
-                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="button">Ajouter</button>
-                <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="button">Soustraire</button>
-                <button @click="removeIngredient(index, ingredient.name)" class="button">Supprimer</button>
+                <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" class="quantity-input" />
+                <div class="modal-actions-icons">
+                  <i class="bi bi-plus-circle-fill icon-action" 
+                    @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" 
+                    title="Ajouter">
+                  </i>
+                  <span class="tooltip-text">Ajouter</span>
+                  <i class="bi bi-dash-circle-fill icon-action" 
+                    @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" 
+                    title="Diminuer">
+                  </i>
+                  <span class="tooltip-text">Diminuer</span>
+                  <i class="bi bi-trash-fill icon-action" 
+                    @click="removeIngredient(index, ingredient.name)" 
+                    title="Supprimer">
+                  </i>
+                  <span class="tooltip-text">Supprimer</span>
+                </div>
               </div>
             </li>
           </ul>
@@ -84,26 +118,38 @@
           <li v-for="(ingredient, index) in filteredIngredients" :key="index" class="ingredient-item">
             <div class="ingredient-info">
               <strong>{{ ingredient.name }}</strong>
-              <div class="ingredient-quantity">{{ ingredient.quantity }}</div>
+              <div class="ingredient-quantity"><strong>({{ ingredient.quantity }})</strong></div>
             </div>
             <div class="ingredient-actions">
-              <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" />
-              <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" class="button">Ajouter</button>
-              <button @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" class="button">Soustraire</button>
-              <button @click="removeIngredient(index, ingredient.name)" class="button">Supprimer</button>
+              <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" class="quantity-input"/>
+              <div class="modal-actions-icons">
+                <i class="bi bi-plus-circle-fill icon-action" 
+                  @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" 
+                  title="Ajouter">
+                </i>
+                <span class="tooltip-text">Ajouter</span>
+                <i class="bi bi-dash-circle-fill icon-action" 
+                  @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" 
+                  title="Diminuer">
+                </i>
+                <span class="tooltip-text">Diminuer</span>
+                <i class="bi bi-trash-fill icon-action" 
+                  @click="removeIngredient(index, ingredient.name)" 
+                  title="Supprimer">
+                </i>
+                <span class="tooltip-text">Supprimer</span>
+              </div>
             </div>
           </li>
         </ul>
       </div>
-
-      <div v-if="isLoading" class="loading-spinner">Chargement...</div>
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-
+import { BrowserMultiFormatReader } from "@zxing/browser";
 export default {
   name: "IngredientsPage.vue",
   data() {
@@ -118,19 +164,20 @@ export default {
       analysisResult: [],
       isLoading: false,
       sortByCategory: false,
-      errorMessage: ""
+      errorMessage: "",
+      showModal: false,
+      scanner: null,
+      scannerActive: false,
     };
   },
   computed: {
     filteredIngredients() {
       let filtered = this.ingredients;
-
       if (this.searchIngredient.trim() !== "") {
         filtered = filtered.filter(ingredient =>
           ingredient.name.toLowerCase().includes(this.searchIngredient.trim().toLowerCase())
         );
       }
-
       return filtered;
     },
     categorizedIngredients() {
@@ -155,12 +202,30 @@ export default {
         this.imageUrl = URL.createObjectURL(file);
       }
     },
+    async activerScanner() {
+      try {
+        this.scanner = new BrowserMultiFormatReader();
+        const constraints = {
+          video: {
+            facingMode: { exact: "environment" }
+          }
+        };
+        const videoElement = document.getElementById("scanner");
+        const result = await this.scanner.decodeOnceFromVideoDevice(null, videoElement, constraints);
+        if (result) {
+          this.ingredientName = result.text;
+          console.log(this.ingredientName)
+          this.addIngredient();
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'activation du scanner :", error);
+        alert("Impossible d'accéder à la caméra. Veuillez vérifier les permissions.");
+      }
+    },
     async analyzeImage() {
       if (!this.imageFile) return;
-
       const formData = new FormData();
       formData.append("image", this.imageFile);
-
       try {
         this.isLoading = true;
         const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/users/analyzeImage`, formData, {
@@ -168,7 +233,6 @@ export default {
             "Content-Type": "multipart/form-data"
           }
         });
-
         if (response.data && response.data.data) {
           this.analysisResult = response.data.data.map(item => ({
             ...item,
@@ -180,6 +244,7 @@ export default {
           this.analysisResult = [];
           alert("Aucun ingrédient trouvé dans l'image.");
         }
+        this.showModal = true;
       } catch (error) {
         console.error("Erreur lors de l'analyse de l'image :", error);
         alert("Une erreur est survenue lors de l'analyse de l'image.");
@@ -188,34 +253,28 @@ export default {
       }
     },
     async validateSelection() {
+      this.showModal = false;
       const selectedItems = this.analysisResult.filter(item => item.selected && item.quantity);
-
       const invalidItems = selectedItems.filter(item => !item.quantity || parseFloat(item.quantity) <= 0);
       if (invalidItems.length > 0) {
         this.errorMessage = "Veuillez indiquer une quantité valide pour tous les ingrédients sélectionnés.";
         return;
       }
-
       this.errorMessage = "";
-  
       for (const item of selectedItems) {
         const existingIngredientIndex = this.ingredients.findIndex(
           ingredient => 
             ingredient.name.toLowerCase() === item.name.toLowerCase() && ingredient.quantity.includes(item.unit)
         );
-
         if (existingIngredientIndex !== -1) {
           const existingIngredient = this.ingredients[existingIngredientIndex];
           const currentQuantityString = existingIngredient.quantity;
           const quantityMatch = currentQuantityString.match(/^([\d.]+)\s*(.*)$/);
-
           if (quantityMatch) {
             const currentQuantity = parseFloat(quantityMatch[1]);
             const currentUnit = quantityMatch[2];
             const updatedQuantity = currentQuantity + parseFloat(item.quantity);
-
             this.ingredients[existingIngredientIndex].quantity = `${updatedQuantity} ${currentUnit}`.trim();
-
             try {
               await axios.put(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/update`, {
                 foodName: item.name,
@@ -247,7 +306,6 @@ export default {
           }
         }
       }
-
       this.analysisResult = [];
       this.$emit("ingredients-updated", this.ingredients);
     },
@@ -272,27 +330,22 @@ export default {
     async addIngredient() {
       const input = this.newIngredient.trim();
       let ingredientName = input;
-
       if (ingredientName) {
         const existingIngredientIndex = this.ingredients.findIndex(
           (item) => item.name === ingredientName && item.quantity.includes(this.newUnit)
         );
-
         if (existingIngredientIndex !== -1) {
           const existingIngredient = this.ingredients[existingIngredientIndex];
           const currentQuantityString = existingIngredient.quantity;
           const quantityMatch = currentQuantityString.match(/^([\d.]+)\s*(.*)$/);
-
           if (!quantityMatch) {
             alert("Impossible de traiter la quantité actuelle.");
             return;
           }
-
           const currentQuantity = parseFloat(quantityMatch[1]);
           const currentUnit = quantityMatch[2];
           const additionalQuantity = parseFloat(this.newQuantity) || 1;
           const updatedQuantity = currentQuantity + additionalQuantity;
-
           try {
             const response = await axios.put(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/update`, {
               foodName: ingredientName,
@@ -301,11 +354,9 @@ export default {
             }, {
               withCredentials: true
             });
-
             if (response.status !== 200) {
               throw new Error("Erreur lors de la mise à jour de l'aliment dans le réfrigérateur de l'utilisateur.");
             }
-
             this.ingredients[existingIngredientIndex].quantity = `${updatedQuantity} ${currentUnit}`.trim();
           } catch (error) {
             console.error("Erreur lors de la mise à jour de l'aliment :", error);
@@ -319,11 +370,9 @@ export default {
             }, {
               withCredentials: true
             });
-
             if (response.status !== 200) {
               throw new Error("Erreur lors de l'ajout de l'aliment dans le réfrigérateur de l'utilisateur.");
             }
-
             await this.fetchIngredientsFromFridge();
           } catch (error) {
             if (error.response && error.response.status === 404) {
@@ -334,7 +383,6 @@ export default {
           }
         }
       }
-
       this.newIngredient = "";
       this.newQuantity = "";
       this.newUnit = "";
@@ -345,19 +393,15 @@ export default {
         alert("Veuillez entrer une quantité valide.");
         return;
       }
-
       const currentQuantityString = this.ingredients[index].quantity;
       const quantityMatch = currentQuantityString.match(/^([\d.]+)\s*(.*)$/);
-
       if (!quantityMatch) {
         alert("Impossible de traiter la quantité actuelle.");
         return;
       }
-
       const currentQuantity = parseFloat(quantityMatch[1]);
       const currentUnit = quantityMatch[2];
       let updatedQuantity;
-
       if (action === 'add') {
         updatedQuantity = currentQuantity + quantity;
       } else if (action === 'subtract') {
@@ -367,7 +411,6 @@ export default {
           return;
         }
       }
-
       try {
         const response = await axios.put(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/update`, {
           foodName: ingredientName,
@@ -376,11 +419,9 @@ export default {
         }, {
           withCredentials: true
         });
-
         if (response.status !== 200) {
           throw new Error("Erreur lors de la mise à jour de l'aliment dans le réfrigérateur de l'utilisateur.");
         }
-
         this.ingredients[index].quantity = `${updatedQuantity} ${currentUnit}`.trim();
       } catch (error) {
         console.error("Erreur lors de la mise à jour de l'aliment :", error);
@@ -392,11 +433,9 @@ export default {
           params: { foodName: ingredientName },
           withCredentials: true
         });
-
         if (response.status !== 200) {
           throw new Error("Erreur lors de la suppression de l'aliment du réfrigérateur de l'utilisateur.");
         }
-
         this.ingredients.splice(index, 1);
         this.$emit("ingredients-updated", this.ingredients);
       } catch (error) {
@@ -405,15 +444,122 @@ export default {
     },
     sortIngredientsByCategory() {
       this.sortByCategory = !this.sortByCategory;
-    }
+    },
+    closeModal() {
+      this.showModal = false;
+    },
   }
 };
 </script>
 
 <style scoped>
+.card {
+  background-color: #212121;
+  border: none;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.action-icon {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  margin-left: 10px;
+}
+.action-icon:hover {
+  transform: scale(1.2);
+  opacity: 0.8;
+}
+.add-icon {
+  margin-left: 0;
+}
+.subtract-icon {
+  margin-left: 10px;
+}
+.delete-icon {
+  margin-left: auto;
+}
+.tooltip-text {
+  visibility: hidden;
+  width: 80px;
+  background-color: #212121;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 5px;
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.icon-wrapper:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+.modal-content {
+  background-color: #212121;
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 700px;
+  max-height: 80vh;
+  width: 100%;
+  animation: fadeIn 0.3s ease-out;
+  overflow-y: auto;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color:white;
+}
+.close-btn:hover{
+  transform: scale(1.05);
+}
 .add-ingredients {
   text-align: left;
   margin: 20px 0;
+}
+.add-ingredients input[type="text"] {
+  display: block;
+  margin: 0 auto 15px auto;
+  width: 80%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  font-size: 1rem;
+  text-align: center;
 }
 .input-container, .upload-container {
   margin-top: 20px;
@@ -423,14 +569,25 @@ export default {
   display: flex;
   gap: 10px;
 }
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 20px auto;
+  text-align: center;
+}
 .image-preview {
-  margin-top: 10px;
-  max-width: 300px;
+  margin-top: 15px;
+  max-width: 400px;
+  border-radius: 8px;
 }
 .image-preview img {
+  display: block;
+  margin: 0 auto;
   width: 100%;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 8px;
 }
 .analysis-results {
   margin-top: 20px;
@@ -483,14 +640,44 @@ export default {
   border-radius: 5px;
   margin-bottom: 10px;
 }
+.ingredient-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 20px auto;
+  width: 100%;
+}
 .ingredient-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-  padding: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding: 15px;
+  width : 300px;
+  max-width: 500px;
+  margin-bottom: 10px;
+  background-color: #171717;
   border: 1px solid #ddd;
   border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-out;
+}
+.ingredient-item.removed {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+.quantity-input {
+  width: 50px;
+  padding: 5px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.quantity-input:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
 }
 .ingredient-info {
   flex-grow: 1;
@@ -502,30 +689,6 @@ export default {
 .ingredient-actions {
   display: flex;
   gap: 5px;
-}
-.add-button {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-.subtract-button {
-  background-color: #ffc107;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-.remove-button {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
 }
 .sort-button {
   background-color: #BA9371;
@@ -588,8 +751,8 @@ input[type="checkbox"] {
   position: relative;
 }
 input[type="checkbox"]:checked {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: #C56929;
+  border-color: #C56929;
 }
 input[type="checkbox"]:checked::after {
   content: "✓";
@@ -599,5 +762,118 @@ input[type="checkbox"]:checked::after {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+.input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+.input-container input[type="text"],
+.input-container input[type="number"],
+.input-container select {
+  width: 100px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  text-align: center;
+}
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-message {
+  text-align: center;
+  font-size: 1.2em;
+  color: #666;
+  margin-top: 20px;
+}
+.modal-actions-icons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.icon-action {
+  font-size: 24px;
+  color: #BA9371;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.3s ease;
+}
+.icon-action:hover {
+  transform: scale(1.2);
+  color: #C56929;
+}
+.camera-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border-radius: 16px;
+  align-items: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.camera-feed {
+  width: 100%;
+  max-width: 300px;
+  height: 200px;
+  border-radius: 8px;
+  border: 1px solid rgba(204, 204, 204, 0.6);;
+  object-fit: cover;
+  background-color: #212121;
+}
+.camera-placeholder {
+  width: 100%;
+  max-width: 300px;
+  height: 200px;
+  border-radius: 8px;
+  border: 1px solid rgba(204, 204, 204, 0.6);
+  object-fit: cover;
+  background-color: #212121;
+}
+.input-text {
+  width: 100%;
+  padding: 5px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.analyze-button {
+  display: block;
+  margin: 20px auto;
+  width: 50%;
+  max-width: 150px;
+  border: none;
+  border-radius: 8px;
+}
+.search-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+.input-text input[type="text"] {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  font-size: 1rem;
+  text-align: center;
+  background-color: white;
+  color: black;
 }
 </style>

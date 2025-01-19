@@ -2,14 +2,16 @@
   <div class="container">
     <div class="card p-4 text-white">
       <h1>Ingrédients en stock </h1>
-      <p>Entrez un ingrédient ou un code-barres pour l'ajouter à votre stock.</p>
+      <p>Entrez un ingrédient pour l'ajouter à votre stock.</p>
+      <!--
       <div class="camera-container d-flex flex-column justify-content-center align-items-center">
         <video id="scanner" class="camera-feed"></video>
         <button @click="activerScanner" class="btn btn-secondary mt-2">Scanner</button>
       </div>
       <br>
+      -->
       <div class="input-text">
-        <input type="text" v-model="newIngredient" placeholder="Ingrédient ou code-barres" :disabled="isLoading" />
+        <input type="text" v-model="newIngredient" placeholder="Ingrédient" :disabled="isLoading" />
       </div>
       <div class="input-container">
         <input v-model="newQuantity" type="number" min="1" placeholder="Quantité" :disabled="isLoading" class="quantity-input"/>
@@ -213,8 +215,8 @@ export default {
         const videoElement = document.getElementById("scanner");
         const result = await this.scanner.decodeOnceFromVideoDevice(null, videoElement, constraints);
         if (result) {
-          this.ingredientName = result.text;
-          console.log(this.ingredientName)
+          this.newIngredient = result.text;
+          console.log(this.newIngredient)
           this.addIngredient();
         }
       } catch (error) {
@@ -330,6 +332,10 @@ export default {
     async addIngredient() {
       const input = this.newIngredient.trim();
       let ingredientName = input;
+      if (/\d/.test(ingredientName)) {
+        alert("Le nom de l'ingrédient ne peut pas contenir de chiffres. Veuillez entrer un aliment valide.");
+        return;
+      }
       if (ingredientName) {
         const existingIngredientIndex = this.ingredients.findIndex(
           (item) => item.name === ingredientName && item.quantity.includes(this.newUnit)

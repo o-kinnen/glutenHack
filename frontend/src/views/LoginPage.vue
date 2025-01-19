@@ -89,7 +89,7 @@ export default {
       }
     },
     errorHandler(error) {
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.VUE_APP_NODE_ENV !== 'production') {
         console.error('Erreur :', error);
       }
     },

@@ -1,4 +1,5 @@
 const pool = require('../utils/db');
+const RecipeModel = require('../models/recipeModel');
 
 const User = {
   getAll: async () => {
@@ -23,12 +24,12 @@ const User = {
   },
   delete: async (user_id) => {
     try {
-        await pool.query('UPDATE "recipes" SET user_id = 156 WHERE user_id = $1 AND public = true', [user_id]);
-        await pool.query('DELETE FROM "recipes" WHERE user_id = $1 AND public = false', [user_id]);
+        await pool.query('UPDATE "recipes" SET user_id = 156 WHERE user_id = $1', [user_id]);
         await pool.query('DELETE FROM "dietary_restrictions" WHERE user_id = $1', [user_id]);
-        await pool.query('DELETE FROM "favorites" WHERE user_id = $1', [user_id]);
+        await pool.query('DELETE FROM "favorites" WHERE user_id = $1 OR recipe_id IN (SELECT recipe_id FROM recipes WHERE user_id = $1)', [user_id]);
         await pool.query('DELETE FROM "shopping_list_items" WHERE list_id IN (SELECT list_id FROM "shopping_list" WHERE user_id = $1)', [user_id]);
         await pool.query('DELETE FROM "shopping_list" WHERE user_id = $1', [user_id]);
+        await pool.query('DELETE FROM "reviews" WHERE user_id = $1', [user_id]);
         const result = await pool.query('DELETE FROM "users" WHERE user_id = $1 RETURNING *', [user_id]);
         return result.rows[0];
     } catch (error) {
@@ -78,28 +79,28 @@ const User = {
   },
   addFoodToFridge: async (userId, foodName, quantity) => {
     try {
+      const isBarcode = /^\d+$/.test(foodName);
       let barcode = null;
       let foodId = null;
       let foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
       if (foodResult.rows.length === 0) {
-        const isBarcode = /^\d+$/.test(foodName);
-        let barcodeResult;
-        if (isBarcode) {
-          barcodeResult = await pool.query(
-            'SELECT barcode, barcode_name FROM barcodes WHERE barcode = $1',
+        if (/^[a-zA-Z\s]+$/.test(foodName)) {
+          foodId = await RecipeModel.getOrCreateFoodId(foodName);
+        } else if (isBarcode) {
+          const barcodeResult = await pool.query(
+            'SELECT barcode, barcode_name, food_id FROM barcodes WHERE barcode = $1',
             [foodName]
           );
+          if (barcodeResult.rows.length > 0) {
+            barcode = barcodeResult.rows[0].barcode;
+            foodId = barcodeResult.rows[0].food_id;
+            foodName = barcodeResult.rows[0].barcode_name;
+          } else {
+            throw new Error('Aliment non trouvé dans barcodes.');
+          }
         } else {
-          barcodeResult = await pool.query(
-            'SELECT barcode, barcode_name FROM barcodes WHERE barcode_name = $1',
-            [foodName]
-          );
+          throw new Error("Le nom de l'aliment doit contenir uniquement des lettres ou être un code-barres.");
         }
-        if (barcodeResult.rows.length === 0) {
-          throw new Error('Aliment non trouvé dans barcodes.');
-        }
-        barcode = barcodeResult.rows[0].barcode;
-        foodName = barcodeResult.rows[0].barcode_name;
       } else {
         foodId = foodResult.rows[0].food_id;
       }
@@ -108,7 +109,7 @@ const User = {
         [userId, foodId, barcode, quantity, null]
       );
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'aliment au réfrigérateur :', error);
+      console.error("Erreur lors de l'ajout de l'aliment au réfrigérateur :", error);
       throw error;
     }
   },    

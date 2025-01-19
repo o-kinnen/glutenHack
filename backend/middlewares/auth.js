@@ -1,4 +1,5 @@
 const db = require('../utils/db');
+const logger = require('../utils/logger');
 
 const authMiddleware = async (req, res, next) => {
   const token = req.cookies.token;
@@ -19,7 +20,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = { user_id: tokenData.user_id };
     next();
   } catch (error) {
-    console.error('Erreur lors de la vérification du token opaque :', error.message);
+    logger.error('Erreur lors de la vérification du token opaque :', error.message);
     res.status(500).json({ message: 'Erreur interne du serveur.' });
   }
 };

@@ -64,7 +64,8 @@ exports.updateRecipe = async (req, res) => {
       public: isPublic,
       restrictionsList,
       ingredients,
-      instructions
+      instructions,
+      removeImage,
     } = req.body;
     let parsedIngredients = [];
     let parsedRestrictions = [];
@@ -82,10 +83,7 @@ exports.updateRecipe = async (req, res) => {
       console.error('Erreur de parsing des champs JSON :', error);
       return res.status(400).json({ error: 'Erreur de parsing des champs JSON.' });
     }
-    const imageUrl = req.file
-      ? `${process.env.URL_BACKEND}/uploads/${req.file.filename}`
-      : null;
-     const existingRecipe = await getRecipesByUserId(userId);
+    const existingRecipe = await getRecipesByUserId(userId);
     if (!existingRecipe) {
       return res.status(404).json({ error: 'Recette non trouvée.' });
     }
@@ -93,17 +91,20 @@ exports.updateRecipe = async (req, res) => {
     if (!recipeToUpdate) {
       return res.status(404).json({ error: 'Recette non trouvée.' });
     }
-    if (imageUrl && recipeToUpdate.image_url) {
-      const oldImagePath = path.join(__dirname, '../uploads', path.basename(recipeToUpdate.image_url));
+    let imageUrl = recipeToUpdate.image_url;
+    if ((removeImage === 'true' || removeImage === true) && recipeToUpdate.image_url) {
+      const oldImagePath = path.join(
+        __dirname,
+        '../uploads',
+        path.basename(recipeToUpdate.image_url)
+      );
       if (fs.existsSync(oldImagePath)) {
-        fs.unlink(oldImagePath, (err) => {
-          if (err) {
-            console.error(`Erreur lors de la suppression de l'ancienne image : ${err.message}`);
-          }
-        });
-      } else {
-        console.warn('Le fichier de l\'ancienne image n\'existe pas :', oldImagePath);
+        fs.unlinkSync(oldImagePath);
       }
+      imageUrl = null;
+    }
+    if (req.file) {
+      imageUrl = `${process.env.URL_BACKEND}/uploads/${req.file.filename}`;
     }
     const formattedInstructions = parsedInstructions.join('\n');
     const updatedRecipeData = {
@@ -118,15 +119,12 @@ exports.updateRecipe = async (req, res) => {
       allergens_list: parsedRestrictions,
       instructions: formattedInstructions,
       ingredients: parsedIngredients,
-      image_url: imageUrl || existingRecipe.image_url,
+      image_url: imageUrl,
     };
     await updateRecipe(updatedRecipeData);
     res.status(200).json({ 
       message: 'Recette mise à jour avec succès.', 
-      updatedRecipe: { 
-        ...updatedRecipeData,
-        image_url: updatedRecipeData.image_url || existingRecipe.image_url
-      } 
+      updatedRecipe: updatedRecipeData, 
     });
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la recette :', error);

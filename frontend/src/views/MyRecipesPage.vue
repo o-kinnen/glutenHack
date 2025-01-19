@@ -131,7 +131,7 @@
           <div class="favorite-icon" v-if="recipe.isFavorite">
             <i class="bi bi-heart-fill" style="color: red;"></i> 
           </div>
-          <img v-if="recipe.image_url" :src="recipe.image_url" alt="Image de la recette" class="modal-recipe-image" />
+          <img v-if="recipe.image_url" :src="recipe.image_url ? recipe.image_url : '/img/food.png'" alt="Image de la recette" class="modal-recipe-image" @error="handleImageError($event)" />
           <button @click="openModal(recipe)">Voir les détails</button>
           <div v-if="getMissingAllergens(recipe).length > 0" class="attention-warning">
             <i class="bi bi-exclamation-triangle-fill"></i>
@@ -145,7 +145,7 @@
       <div v-if="showModal" class="modal-overlay">
         <div class="modal-content-recipe">
           <h3 style="text-align: center;">{{ currentRecipe.recipe_name }}</h3>
-          <img v-if="currentRecipe.image_url" :src="currentRecipe.image_url" alt="Image de la recette" class="recipe-image" />
+          <img v-if="currentRecipe.image_url" :src="currentRecipe.image_url ? currentRecipe.image_url : '/img/food.png'"  alt="Image de la recette" class="recipe-image" @error="handleImageError($event)" />
           <div class="recipe-info-container">
             <div class="recipe-info-line">
               <div class="info-item"><strong>Préparation:</strong><br> {{ currentRecipe.preparation_time }}</div>
@@ -295,6 +295,9 @@ export default {
       this.showProfileFilter = !this.showProfileFilter;
       this.filterRecipes();
     },
+    handleImageError(event) {
+      event.target.src = '/img/food.png';
+    },
     getAllergenIcon(allergen) {
       const allergenIcons = {
         Gluten: '/img/gluten.png',
@@ -311,9 +314,12 @@ export default {
       return allergenIcons[allergen] || '/img/plat.png';
     },
     filterRecipes() {
-      this.filteredRecipes = this.recipes.filter((recipe) => {
-      const matchesFavorites = this.showFavorites ? recipe.isFavorite : true;
-      const matchesAllergens = this.selectedAllergens.every(
+      this.filteredRecipes = this.recipes.map(recipe => ({
+        ...recipe,
+        image_url: recipe.image_url || '/img/food.png',
+      })).filter(recipe => {
+        const matchesFavorites = this.showFavorites ? recipe.isFavorite : true;
+        const matchesAllergens = this.selectedAllergens.every(
         (allergen) => recipe.allergens_list?.includes(allergen)
       );
       const matchesProfile = this.showProfileFilter
@@ -350,29 +356,39 @@ export default {
         return;
       }
       const doc = new jsPDF();
-      let currentY = 10;
-      doc.setFontSize(20);
+      const pageHeight = doc.internal.pageSize.height;
+      const pageMargin = 10;
+      let currentY = pageMargin;
+      const checkPageEnd = (lineHeight = 10) => {
+        if (currentY + lineHeight > pageHeight - pageMargin) {
+          doc.addPage();
+          currentY = pageMargin;
+        }
+      };
+      doc.setFontSize(10);
       doc.text(this.currentRecipe.recipe_name, 10, currentY);
       currentY += 10;
-      doc.setFontSize(12);
-      doc.text(`Préparation: ${this.currentRecipe.preparation_time}`, 10, currentY);
-      currentY += 10;
-      doc.text(`Difficulté: ${this.currentRecipe.difficulty}`, 10, currentY);
-      currentY += 10;
-      doc.text(`Part(s): ${this.currentRecipe.number_of_person}`, 10, currentY);
-      currentY += 10;
-      doc.text(`Cuisine: ${this.currentRecipe.cuisine_type}`, 10, currentY);
-      currentY += 10;
-      doc.text(`Type: ${this.currentRecipe.category_type}`, 10, currentY);
-      currentY += 10;
-      const allergens = this.currentRecipe.allergens_list?.length
-        ? this.currentRecipe.allergens_list.join(", ")
-        : "Aucun allergène spécifié.";
-      doc.text(`Sans allergène: ${allergens}`, 10, currentY);
-      currentY += 10;
+      const details = [
+        `Préparation: ${this.currentRecipe.preparation_time}`,
+        `Difficulté: ${this.currentRecipe.difficulty}`,
+        `Part(s): ${this.currentRecipe.number_of_person}`,
+        `Cuisine: ${this.currentRecipe.cuisine_type}`,
+        `Type: ${this.currentRecipe.category_type}`,
+        `Sans allergène: ${
+          this.currentRecipe.allergens_list?.length
+          ? this.currentRecipe.allergens_list.join(", ")
+          : "Aucun allergène spécifié."
+        }`
+      ];
+      details.forEach(detail => {
+        checkPageEnd();
+        doc.text(detail, 10, currentY);
+        currentY += 10;
+      });
       if (this.currentRecipe.image_url) {
         try {
           const imageBase64 = await this.convertImageToBase64(this.currentRecipe.image_url);
+          checkPageEnd(90);
           doc.addImage(imageBase64, "PNG", 10, currentY, 80, 80);
           currentY += 90;
         } catch (error) {
@@ -394,8 +410,11 @@ export default {
       const lineHeight = 10;
       this.formattedInstructionsArray.forEach((step, index) => {
         const textLines = doc.splitTextToSize(`${index + 1}. ${step}`, 190);
-        doc.text(textLines, 10, currentY);
-        currentY += textLines.length * lineHeight;
+        textLines.forEach(line => {
+          checkPageEnd(lineHeight);
+          doc.text(line, 10, currentY);
+          currentY += lineHeight;
+        });
       });
       doc.save(`${this.currentRecipe.recipe_name}.pdf`);
     },

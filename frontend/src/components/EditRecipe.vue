@@ -14,11 +14,13 @@
           <input type="file" id="recipe-photo" @change="handleFileUpload" name="image" accept=".png, .jpg, .jpeg" />
           <div class="image-preview">
             <img :src="previewImage || localRecipe.image_url || defaultImage" alt="Aperçu de l'image" />
+            <!--
             <i v-if="previewImage || localRecipe.image_url !== defaultImage" 
               class="bi bi-trash-fill icon-action remove-photo" 
               @click="removePhoto" 
               title="Supprimer">
             </i>
+            -->
           </div>
           <span v-if="errors.image" class="error-text">{{ errors.image }}</span>
         </div>
@@ -237,10 +239,11 @@ export default {
         image: null,
         public: false,
         image_url: null,
+        removeImage: false,
       },
       previewImage: null,
       errors: {},
-      defaultImage: "/img/plat.png",
+      defaultImage: "/img/food.png",
     };
   },
   watch: {
@@ -268,6 +271,7 @@ export default {
             allergens_list: [],
             image: null,
             public: false,
+            removeImage: false,
           };
           this.previewImage = null;
         }
@@ -300,18 +304,19 @@ export default {
       if (this.localRecipe.allergens_list.length === 0) {
         this.localRecipe.allergens_list = ["Pas de mention"];
       }
+      this.localRecipe.removeImage = !this.localRecipe.image_url && !this.localRecipe.image;
       if (Object.keys(this.errors).length === 0) {
         this.handleSubmit();
       }
     },
     handleSubmit() {
+      const updatedData = {
+        ...this.localRecipe,
+      };
       if (this.mode === "create") {
-        this.$emit("create-recipe", { ...this.localRecipe });
+        this.$emit("create-recipe", updatedData );
       } else if (this.mode === "edit") {
-        if (!this.localRecipe.image && this.localRecipe.image_url) {
-          this.localRecipe.image = this.defaultImage;
-        }
-        this.$emit("update-recipe", { ...this.localRecipe });
+        this.$emit("update-recipe", updatedData);
       }
       this.closeModal();
     },
@@ -332,8 +337,9 @@ export default {
     },
     removePhoto() {
       this.localRecipe.image = null;
-      this.localRecipe.image_url = this.defaultImage;
+      this.localRecipe.image_url = null;
       this.previewImage = null;
+      this.localRecipe.removeImage = true;
     },
     addIngredient() {
       if (!Array.isArray(this.localRecipe.ingredients)) {

@@ -137,7 +137,7 @@ export default {
       }
     },
     async deleteAccount() {
-      if (confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Les recettes publiques seront conservées en anonyme et seules les recettes privées seront supprimées.')) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible')) {
         try {
           const response = await fetch(`${process.env.VUE_APP_URL_BACKEND}/users/delete`, {
             method: 'DELETE',

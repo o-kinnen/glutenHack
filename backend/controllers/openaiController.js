@@ -27,7 +27,7 @@ const getRecipe = async (req, res) => {
       const stockIngredients = availableIngredients
       .map(ingredient => `${ingredient.food_name} (${ingredient.selectedQuantity} ${ingredient.unit || ''})`)
       .join(', ');
-      content += ` Il faut qu'un maximum des ingrédients suivants soient utilisés : ${stockIngredients}.`;
+      content += ` Parmis les ingrédients inclus les suivants : ${stockIngredients}.`;
     }
     content += ` Le format de la réponse doit être en JSON valide avec les clés suivantes :
     "restrictionsList" dont la valeur est égale à une liste contenant les éléments suivants ${restrictionsList},

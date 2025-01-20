@@ -10,9 +10,11 @@
       </div>
       <div v-else>
         <div class="action-buttons">
+          <!--
           <button @click="toggleSort" class="button sort-btn">
             {{ categoriesVisible ? 'Trier' : 'Trier' }}
           </button>
+          -->
           <button @click="exportToFile" class="button export-btn">Exporter</button>
         </div>
       </div>

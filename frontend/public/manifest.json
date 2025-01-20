@@ -9,13 +9,8 @@
     "orientation": "portrait",
     "icons": [
       {
-        "src": "/img/logo.png",
+        "src": "/img/logo.png?v=1",
         "sizes": "64x64 32x32 24x24 16x16",
-        "type": "image/png"
-      },
-      {
-        "src": "https://via.placeholder.com/512x512",
-        "sizes": "512x512",
         "type": "image/png"
       }
     ]

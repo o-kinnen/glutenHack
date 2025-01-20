@@ -168,7 +168,7 @@ exports.deleteUser = async (req, res, next) => {
     await pool.query('DELETE FROM tokens WHERE user_id = $1', [user.user_id]);
     res.clearCookie('token');
     res.status(200).json({ 
-      message: 'Compte utilisateur supprimé avec succès. Les recettes publiques ont été anonymisées, et les recettes privées ont été supprimées.' 
+      message: 'Compte utilisateur supprimé avec succès.' 
     });
   } catch (error) {
     console.error('Erreur lors de la suppression de l’utilisateur :', error);

@@ -24,8 +24,8 @@ const verifierAliment = async (req, res) => {
       `,
       [codeBarre]
     );
-    const imageUrl = `${process.env.URL_BACKEND}/uploads/analyse/${codeBarre}.jpg`;
-    const imagePath = path.join(__dirname, '../uploads/analyse', `${codeBarre}.jpg`);
+    const localImagePath = `/uploads/analyse/${codeBarre}.jpg`;
+    const fullImagePath = path.resolve('uploads/analyse', `${codeBarre}.jpg`);
     if (barcodeData.rows.length > 0) {
       const barcodeInfo = {
         barcode: barcodeData.rows[0].barcode,
@@ -37,7 +37,7 @@ const verifierAliment = async (req, res) => {
       };
       return res.status(200).json({
         ...barcodeInfo,
-        imageUrl: fs.existsSync(imagePath) ? imageUrl : null,
+        imageUrl: fs.existsSync(fullImagePath) ? localImagePath : null,
         source: "Les informations affichées proviennent de la base de données OpenFoodFacts.",
       });
     }
@@ -50,6 +50,24 @@ const verifierAliment = async (req, res) => {
     const allergenesNettoyes = allergenesEtTraces.map(a =>
       a.replace(/^(en:|fr:)/, '').replace('_', ' ').toLowerCase()
     );
+    const allergenesNettoyesFiltrés = allergenesNettoyes.filter(a => a.trim() !== "");
+    if (allergenesNettoyesFiltrés.length === 0) {
+      if (!fs.existsSync(fullImagePath) && remoteImageUrl) {
+        try {
+          await downloadImage(remoteImageUrl, `${codeBarre}.jpg`);
+        } catch (err) {
+          console.error("Erreur lors du téléchargement de l'image :", err);
+        }
+      }
+      return res.status(200).json({
+        barcode: codeBarre,
+        barcode_name: nomAliment,
+        allergenes: [],
+        message: "Cet aliment ne contient pas d'allergènes connus.",
+        imageUrl: fs.existsSync(fullImagePath) ? localImagePath : null,
+        source: "Les informations affichées proviennent de la base de données OpenFoodFacts.",
+      });
+    }
     const [allergenesTraduits] = await translate.translate(allergenesNettoyes, 'fr');
     await db.query(
       'INSERT INTO barcodes (barcode, barcode_name, created_at) VALUES ($1, $2, NOW())',
@@ -80,7 +98,7 @@ const verifierAliment = async (req, res) => {
       barcode: codeBarre,
       barcode_name: nomAliment,
       allergenes: allergenesTraduits,
-      imageUrl: `/uploads/analyse/${codeBarre}.jpg`,
+      imageUrl: fs.existsSync(fullImagePath) ? localImagePath : null,
       source: "Les informations affichées proviennent de la base de données OpenFoodFacts.",
     });
   } catch (error) {
@@ -90,7 +108,7 @@ const verifierAliment = async (req, res) => {
 };
 
 const downloadImage = async (imageUrl, fileName) => {
-  const filePath = path.join(__dirname, '../uploads/analyse', fileName);
+  const filePath = path.resolve('uploads/analyse', fileName);
   const writer = fs.createWriteStream(filePath);
   const response = await axios({
     url: imageUrl,
@@ -99,7 +117,10 @@ const downloadImage = async (imageUrl, fileName) => {
   });
   return new Promise((resolve, reject) => {
     response.data.pipe(writer);
-    writer.on('finish', () => resolve(filePath));
+    writer.on('finish', () => {
+      console.log(`Image téléchargée : ${filePath}`);
+      resolve(filePath);
+    });
     writer.on('error', reject);
   });
 };

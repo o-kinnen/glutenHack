@@ -21,14 +21,20 @@
         <div class="modal-content">
           <button class="close-btn" @click="closeModal">X</button>
           <div v-if="resultat !== null" class="resultat">
-            <p v-if="!resultat.peutManger">
+            <p v-if="resultat.message">
+              ⚠️ <strong>{{ resultat.nomAliment }}</strong> {{ resultat.message }}
+            </p>
+            <p v-else-if="!resultat.peutManger">
               ⚠️ <strong>{{ resultat.nomAliment }}</strong> contient des allergènes problématiques pour vous : <strong>{{ resultat.allergenesProbleme.join(', ') }}</strong>
             </p>
             <p v-else>
               ✅ <strong>{{ resultat.nomAliment }}</strong> semble sûr pour vous. Aucun allergène de votre profil n'est mentionné.
             </p>
             <div v-if="resultat.imageUrl" class="d-flex justify-content-center">
-              <img :src="`${resultat.imageUrl}?t=${Date.now()}`" alt="Photo de l'aliment" style="max-width: 200px; border: 1px solid #ccc;" />
+              <img :src="`${resultat.imageUrl}`" alt="Photo de l'aliment" style="max-width: 200px; border: 1px solid #ccc;" />
+            </div>
+            <div v-else class="d-flex justify-content-center">
+              <p>Image non disponible.</p>
             </div>
             <p class="source">
               <small>Les informations affichées proviennent de la base de données <a :href="'https://world.openfoodfacts.org/product/' + codeBarre" target="_blank" class="text-white">OpenFoodFacts</a>.</small>
@@ -73,11 +79,15 @@ export default {
         alert("Veuillez entrer un code-barre.");
         return;
       }
+      if (!/^\d+$/.test(codeBarre)) {
+        alert("Le code-barre doit uniquement contenir des chiffres.");
+        return;
+      }
       try {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/api/food`, { params: { codeBarre } });
         const allergenesAliment = response.data.allergenes || [];
         const nomAliment = response.data.barcode_name || "Nom inconnu";
-        const imageUrl = response.data.imageUrl || "";
+        const imageUrl = response.data.imageUrl ? `${process.env.VUE_APP_URL_BACKEND}${response.data.imageUrl}` : "";
         const source = response.data.source || "";
         const restrictionsUtilisateur = await this.getUserRestrictions();
         const allergenesProbleme = allergenesAliment.filter(allergene =>
@@ -85,15 +95,13 @@ export default {
         );
         this.resultat = {
           nomAliment, 
-          imageUrl, 
+          imageUrl: imageUrl ? `${imageUrl}?t=${Date.now()}` : null,
           allergenes: allergenesAliment,
           peutManger: allergenesProbleme.length === 0,
           allergenesProbleme,
+          message: response.data.message || null,
           source,
         };
-        setTimeout(() => {
-          this.resultat.imageUrl += `?t=${Date.now()}`;
-        }, 1000);
         this.showModal = true;
       } catch (error) {
         console.error("Erreur lors de la vérification de l'aliment :", error);

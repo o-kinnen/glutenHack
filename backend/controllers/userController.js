@@ -136,6 +136,9 @@ exports.updateUserPreferences = async (req, res, next) => {
 
 exports.checkAuth = async (req, res) => {
   try {
+    if (!req.user || !req.user.user_id) {
+      return res.status(401).json({ authenticated: false, message: 'Non autorisé. Veuillez vous connecter.' });
+    }
     res.status(200).json({ authenticated: true, userId: req.user.user_id });
   } catch (error) {
     console.error('Erreur lors de la vérification de l\'authentification :', error);
@@ -200,12 +203,20 @@ exports.sendResetLink = async (req, res, next) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'Réinitialisation du mot de passe',
-      html: `Cliquez sur ce <a href="${resetLink}">lien</a> pour réinitialiser votre mot de passe (valide pendant 15 minutes).`,
+      subject: 'CookAller : Réinitialisation du mot de passe',
+      html: `
+      <p>Bonjour ${user.username},</p>
+      <p>Vous avez demandé à réinitialiser votre mot de passe pour votre compte CookAller. Veuillez cliquer sur le lien ci-dessous pour procéder à la réinitialisation :</p>
+      <p><a href="${resetLink}">Réinitialiser mon mot de passe</a></p>
+      <p>Ce lien est valide pendant les 15 prochaines minutes. Si vous n’avez pas demandé cette réinitialisation, veuillez ignorer cet e-mail ou nous contacter immédiatement.</p>
+      <p>Merci de votre confiance,</p>
+      <p>L’équipe CookAller.</p>
+      `,
     };
     await transporter.sendMail(mailOptions);
     res.status(200).json({ success: true, message: 'Email de réinitialisation envoyé.' });
   } catch (error) {
+    console.error('Erreur dans sendResetLink:', error);
     res.status(500).json({ message: 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.' });
   }
 };

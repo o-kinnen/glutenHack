@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div class="card p-4 text-white">
-      <h2>Toutes les recettes</h2>
+      <h2>Autres recettes</h2>
       <div v-if="recipes.length === 0" class="no-recipes">
         <p>Aucune recette a été rendue public par les autres utilisateurs pour le moment...</p>
       </div>
@@ -235,6 +235,12 @@ export default {
     },
   },
   methods: {
+    handleError(error, message) {
+      if (process.env.VUE_APP_NODE_ENV !== 'production') {
+        console.error(message, error);
+      }
+      this.errorMessage = message;
+    },
     toggleFavorites() {
       this.showFavorites = !this.showFavorites;
       this.filterRecipes();
@@ -304,6 +310,7 @@ export default {
         return;
       }
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       const pageMargin = 10;
       let currentY = pageMargin;
@@ -313,34 +320,47 @@ export default {
           currentY = pageMargin;
         }
       };
-      doc.setFontSize(10);
-      doc.text(this.currentRecipe.recipe_name, 10, currentY);
-      currentY += 10;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      const title = this.currentRecipe.recipe_name;
+      const titleWidth = doc.getTextWidth(title);
+      doc.text(title, (pageWidth - titleWidth) / 2, currentY);
+      currentY += 20;
       const details = [
-        `Préparation: ${this.currentRecipe.preparation_time}`,
-        `Difficulté: ${this.currentRecipe.difficulty}`,
-        `Part(s): ${this.currentRecipe.number_of_person}`,
-        `Cuisine: ${this.currentRecipe.cuisine_type}`,
-        `Type: ${this.currentRecipe.category_type}`,
-        `Sans allergène: ${
-          this.currentRecipe.allergens_list?.length
+        { label: "Préparation:", value: this.currentRecipe.preparation_time },
+        { label: "Difficulté:", value: this.currentRecipe.difficulty },
+        { label: "Part(s):", value: this.currentRecipe.number_of_person },
+        { label: "Cuisine:", value: this.currentRecipe.cuisine_type },
+        { label: "Type:", value: this.currentRecipe.category_type },
+        { label: "Sans allergène:", value: this.currentRecipe.allergens_list?.length
           ? this.currentRecipe.allergens_list.join(", ")
           : "Aucun allergène spécifié."
-        }`
+        }
       ];
-      details.forEach(detail => {
-        checkPageEnd();
-        doc.text(detail, 10, currentY);
-        currentY += 10;
+      const columnWidth = (pageWidth - 2 * pageMargin) / 3;
+      const labelX = pageMargin;
+      const valueX = labelX + columnWidth;
+      const nextColumnX = valueX + columnWidth;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      details.forEach((detail, index) => {
+        const column = index % 3;
+        const row = Math.floor(index / 3);
+        const xOffset = column === 0 ? labelX : column === 1 ? valueX : nextColumnX;
+        const yOffset = currentY + row * 10;
+        checkPageEnd(10);
+        doc.text(detail.label, xOffset, yOffset);
+        doc.text(detail.value, xOffset + 30, yOffset);
       });
+      currentY += Math.ceil(details.length / 3) * 10 + 10;
       if (this.currentRecipe.image_url) {
         try {
           const imageBase64 = await this.convertImageToBase64(this.currentRecipe.image_url);
           checkPageEnd(90);
-          doc.addImage(imageBase64, "PNG", 10, currentY, 80, 80);
+          doc.addImage(imageBase64, "PNG", (pageWidth - 80) / 2, currentY, 80, 80);
           currentY += 90;
         } catch (error) {
-          console.error("Erreur lors du chargement de l'image :", error);
+          this.handleError(error, "Erreur lors du chargement de l'image");
         }
       }
       doc.setFontSize(14);
@@ -371,15 +391,14 @@ export default {
         if (!this.currentRecipe?.recipe_id) {
           throw new Error('Aucune recette sélectionnée.');
         }
-        const response = await axios.post(`${process.env.VUE_APP_URL_BACKEND}/recipes/rate`, {
+        await axios.post(`${process.env.VUE_APP_URL_BACKEND}/recipes/rate`, {
           recipeId: this.currentRecipe.recipe_id,
           rating: star,
         }, { withCredentials: true });
-        alert(response.data.message || 'Note enregistrée avec succès.');
         this.currentRecipe.rating = star;
         await this.fetchAverageRating(this.currentRecipe.recipe_id);
       } catch (error) {
-        console.error('Erreur lors de l\'envoi de la note :', error);
+        this.handleError(error, 'Erreur lors de l\'envoi de la note :');
         alert('Une erreur est survenue lors de l\'enregistrement de la note.');
       }
     },
@@ -390,7 +409,7 @@ export default {
       });
         this.currentRecipe.averageRating = parseFloat(response.data.averageRating) || 0;
       } catch (error) {
-        console.error('Erreur lors de la récupération de la moyenne des notes :', error);
+        this.handleError(error, 'Erreur lors de la récupération de la moyenne des notes :');
         this.currentRecipe.averageRating = 0;
         alert('Impossible de récupérer la moyenne des notes.');
       }
@@ -410,23 +429,26 @@ export default {
         }));
         this.filterRecipes();
       } catch (error) {
-        console.error('Erreur lors de la récupération des recettes :', error);
-        this.errorMessage = 'Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.';
+      if (error.response && error.response.status === 404) {
+        this.recipes = [];
+        this.filterRecipes();
+      } else {
+        this.handleError(error, "Erreur lors de la récupération des recettes utilisateur.");
       }
-    },
+    }
+  },
     async addToFavorites() {
       try {
         if (!this.currentRecipe?.recipe_id) {
           throw new Error("Aucune recette sélectionnée pour ajouter aux favoris.");
         }
-        const response = await axios.post(
+        await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/recipes/favorites/add`,
           {
             recipeId: this.currentRecipe.recipe_id,
           },
           { withCredentials: true }
-        );
-        alert(response.data.message || 'Recette ajoutée aux favoris avec succès.');
+        )
         this.isFavorite = true;
         this.currentRecipe.isFavorite = true;
         const recipeIndex = this.recipes.findIndex(r => r.recipe_id === this.currentRecipe.recipe_id);
@@ -438,7 +460,7 @@ export default {
         if (error.response && error.response.status === 409) {
           alert('Cette recette est déjà dans vos favoris.');
         } else {
-          console.error("Erreur lors de l'ajout aux favoris :", error);
+          this.handleError(error, "Erreur lors de l'ajout aux favoris :");
           alert("Une erreur est survenue lors de l'ajout aux favoris.");
         }
       }
@@ -451,7 +473,7 @@ export default {
         );
         this.isFavorite = response.data.isFavorite;
       } catch (error) {
-        console.error("Erreur lors de la vérification du statut des favoris :", error);
+        this.handleError(error, "Erreur lors de la vérification du statut des favoris :");
         this.isFavorite = false;
       }
     },
@@ -460,11 +482,10 @@ export default {
         if (!this.currentRecipe?.recipe_id) {
           throw new Error("Aucune recette sélectionnée pour retirer des favoris.");
         }
-        const response = await axios.delete(
+        await axios.delete(
           `${process.env.VUE_APP_URL_BACKEND}/recipes/favorites/remove/${this.currentRecipe.recipe_id}`,
           { withCredentials: true }
         );
-        alert(response.data.message || 'Recette retirée des favoris avec succès.');
         this.isFavorite = false;
         this.currentRecipe.isFavorite = false;
         const recipeIndex = this.recipes.findIndex(r => r.recipe_id === this.currentRecipe.recipe_id);
@@ -473,7 +494,7 @@ export default {
         }
         this.filterRecipes();
       } catch (error) {
-        console.error("Erreur lors du retrait des favoris :", error);
+        this.handleError(error, "Erreur lors du retrait des favoris :");
         alert("Une erreur est survenue lors du retrait des favoris.");
       }
     }, 
@@ -487,8 +508,7 @@ export default {
       });
       return response.data.restrictions || [];
       } catch (error) {
-        console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
-        alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
+        this.handleError(error, "Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.");
         return [];
       }
     },
@@ -508,7 +528,7 @@ export default {
         );
         alert(response.data.message);
       } catch (error) {
-        console.error('Erreur lors de l\'ajout à la liste des courses:', error);
+        this.handleError(error, 'Erreur lors de l\'ajout à la liste des courses:');
         alert('Une erreur est survenue.');
       }
     },

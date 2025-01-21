@@ -26,7 +26,7 @@
               <router-link to="/my-recipes" class="menu-item1" @click="closeMenu">Mes recettes</router-link>
             </li>
             <li class="nav-item1">
-              <router-link to="/recipes" class="menu-item1" @click="closeMenu">Toutes les recettes</router-link>
+              <router-link to="/recipes" class="menu-item1" @click="closeMenu">Autres recettes</router-link>
             </li>
             <li class="nav-item1">
               <router-link to="/grocery" class="menu-item1" @click="closeMenu">Liste des courses</router-link>
@@ -51,7 +51,7 @@
               <router-link to="/my-recipes" class="nav-link">Mes recettes</router-link>
             </li>
             <li class="nav-item me-3">
-              <router-link to="/recipes" class="nav-link">Toutes les recettes</router-link>
+              <router-link to="/recipes" class="nav-link">Autres recettes</router-link>
             </li>
             <li class="nav-item me-3">
               <router-link to="/grocery" class="nav-link">Liste des courses</router-link>

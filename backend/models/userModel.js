@@ -79,34 +79,20 @@ const User = {
   },
   addFoodToFridge: async (userId, foodName, quantity) => {
     try {
-      const isBarcode = /^\d+$/.test(foodName);
-      let barcode = null;
+      foodName = foodName.trim();
+      if (!/^[a-zA-ZÀ-ÖØ-öø-ÿ\s']+$/.test(foodName)) {
+        throw new Error("Le nom de l'aliment doit contenir uniquement des lettres.");
+      }
       let foodId = null;
-      let foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
+      const foodResult = await pool.query('SELECT food_id FROM foods WHERE food_name = $1', [foodName]);
       if (foodResult.rows.length === 0) {
-        if (/^[a-zA-Z\s]+$/.test(foodName)) {
-          foodId = await RecipeModel.getOrCreateFoodId(foodName);
-        } else if (isBarcode) {
-          const barcodeResult = await pool.query(
-            'SELECT barcode, barcode_name, food_id FROM barcodes WHERE barcode = $1',
-            [foodName]
-          );
-          if (barcodeResult.rows.length > 0) {
-            barcode = barcodeResult.rows[0].barcode;
-            foodId = barcodeResult.rows[0].food_id;
-            foodName = barcodeResult.rows[0].barcode_name;
-          } else {
-            throw new Error('Aliment non trouvé dans barcodes.');
-          }
-        } else {
-          throw new Error("Le nom de l'aliment doit contenir uniquement des lettres ou être un code-barres.");
-        }
+        foodId = await RecipeModel.getOrCreateFoodId(foodName);
       } else {
         foodId = foodResult.rows[0].food_id;
       }
       await pool.query(
-        'INSERT INTO users_fridge (user_id, food_id, barcode, quantity, expiration_date) VALUES ($1, $2, $3, $4, $5)',
-        [userId, foodId, barcode, quantity, null]
+        'INSERT INTO users_fridge (user_id, food_id, quantity, expiration_date) VALUES ($1, $2, $3, $4)',
+        [userId, foodId, quantity, null]
       );
     } catch (error) {
       console.error("Erreur lors de l'ajout de l'aliment au réfrigérateur :", error);

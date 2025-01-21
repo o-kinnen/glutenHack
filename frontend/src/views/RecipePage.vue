@@ -3,7 +3,6 @@
     <div class="card p-4 text-white">
       <h1 class="text-white">Créer une nouvelle recette</h1>
       <p>Vous pouvez créer une recette en l'éditant ou bien la générer à l'aide d'une IA selon vos besoins.</p>
-
       <div  class="buttons-container">
         <button @click="openIARecipeModal" class="button">
           Générer
@@ -18,8 +17,6 @@
           @create-recipe="handleEditRecipe"
         />
       </div>
-
-
   <modal v-if="showIARecipeModal" @close="closeIARecipeModal" class="modal-overlay">
   <div class="modal-content">
     <h3 style="text-align: center;">Personnalisez votre recette</h3>
@@ -94,29 +91,26 @@
         <button @click="fetchRecipe" class="button">Générer</button>
         <button @click="closeIARecipeModal" class="button">Fermer</button>
       </div>  
-  </div>
-</modal>
-
-<div v-if="isLoading" class="loading-overlay">
-  <div class="loading-message">
-    <h2>Recette en cours de création...</h2>
-    <div class="icon-slider">
-      <img src='/img/gluten.png' alt="Icône 1" class="icon" />
-      <img src='/img/lait.png' alt="Icône 2" class="icon" />
-      <img src='/img/oeufs.png' alt="Icône 3" class="icon" />
-      <img src='/img/arachide.png' alt="Icône 4" class="icon" />
-      <img src='/img/noix.png' alt="Icône 5" class="icon" />
-      <img src='/img/poissons.png' alt="Icône 6" class="icon" />
-      <img src='/img/soja.png' alt="Icône 7" class="icon" />
-      <img src='/img/crustacés.png' alt="Icône 8" class="icon" />
-      <img src='/img/moutarde.png' alt="Icône 9" class="icon" />
-      <img src='/img/céleri.png' alt="Icône 10" class="icon" />
+    </div>
+  </modal>
+  <div v-if="isLoading" class="loading-overlay">
+    <div class="loading-message">
+      <h2>Recette en cours de création...</h2>
+      <div class="icon-slider">
+        <img src='/img/gluten.png' alt="Icône 1" class="icon" />
+        <img src='/img/lait.png' alt="Icône 2" class="icon" />
+        <img src='/img/oeufs.png' alt="Icône 3" class="icon" />
+        <img src='/img/arachide.png' alt="Icône 4" class="icon" />
+        <img src='/img/noix.png' alt="Icône 5" class="icon" />
+        <img src='/img/poissons.png' alt="Icône 6" class="icon" />
+        <img src='/img/soja.png' alt="Icône 7" class="icon" />
+        <img src='/img/crustacés.png' alt="Icône 8" class="icon" />
+        <img src='/img/moutarde.png' alt="Icône 9" class="icon" />
+        <img src='/img/céleri.png' alt="Icône 10" class="icon" />
+      </div>
     </div>
   </div>
-</div>
-
-
-    <modal v-if="showModal" @close="closeModal" class="modal-overlay">
+  <modal v-if="showModal" @close="closeModal" class="modal-overlay">
       <div class="modal-content">
         <h3 style="text-align: center;">{{ recipe.title }}</h3>
         <img :src="recipe.image" alt="Image de la recette" v-if="recipe.image" class="modal-recipe-image" />
@@ -161,43 +155,45 @@
       </div>
     </modal>
     <modal v-if="showStockModal" @close="closeStockSelectionModal">
-  <div class="modal-content">
-    <template v-if="availableIngredients.length > 0">
-      <h3>Sélectionnez les ingrédients à inclure</h3>
-      <ul>
-        <li v-for="(ingredient, index) in availableIngredients" :key="index">
-          <label>
-            <input 
-              type="checkbox" 
-              :value="ingredient.food_name" 
-              v-model="selectedIngredients" 
-            />
-            {{ ingredient.food_name }} (Max: {{ ingredient.maxQuantity }} {{ ingredient.unit }})
-          </label>
-          <input
-            type="number"
-            v-model.number="ingredient.selectedQuantity"
-            :placeholder="'Quantité en ' + ingredient.unit"
-            :max="ingredient.maxQuantity"
-            :min="1"
-            :disabled="!selectedIngredients.includes(ingredient.food_name)"
-            @input="validateQuantity(ingredient)"
-            style="margin-left: 10px; width: 100px;"
-          />
-        </li>
-      </ul>
-      <button @click="confirmSelection" >Confirmer</button>
-    </template>
-    <template v-else>
-      <h3>Votre liste d’ingrédients en stock est vide</h3>
-      <p>Voulez-vous ajouter des ingrédients en stock ? Vous serez redirigé vers la page des ingrédients.</p>
-      <button @click="handleStockModalResponse('add')" class="button">Ajouter des ingrédients</button><br>
-      <button @click="handleStockModalResponse('cancel')" class="button">Annuler</button>
-    </template>
+      <div class="modal-content">
+        <template v-if="availableIngredients.length > 0">
+          <h3>Sélectionnez les ingrédients à inclure</h3>
+          <ul>
+            <li v-for="(ingredient, index) in availableIngredients" :key="index">
+              <label>
+                <input 
+                  type="checkbox" 
+                  :value="ingredient.food_name" 
+                  v-model="selectedIngredients" 
+                />
+                  {{ ingredient.food_name }} (Max: {{ ingredient.maxQuantity }} {{ ingredient.unit }})
+              </label>
+              <input
+                type="number"
+                v-model.number="ingredient.selectedQuantity"
+                :placeholder="'Quantité en ' + ingredient.unit"
+                :max="ingredient.maxQuantity"
+                :min="1"
+                :disabled="!selectedIngredients.includes(ingredient.food_name)"
+                @input="validateQuantity(ingredient)"
+                style="margin-left: 10px; width: 100px;"
+              />
+            </li>
+          </ul>
+          <button @click="confirmSelection" >Confirmer</button>
+        </template>
+        <template v-else>
+          <h3>Votre liste d’ingrédients en stock est vide</h3>
+          <p>Voulez-vous ajouter des ingrédients en stock ? Vous serez redirigé vers la page des ingrédients.</p>
+          <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+            <button @click="handleStockModalResponse('add')" class="button">Ajouter des ingrédients</button>
+            <button @click="handleStockModalResponse('cancel')" class="button">Annuler</button>
+          </div>
+        </template>
+      </div>
+    </modal>
   </div>
-</modal>
-</div>
-<canvas id="confetti-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
   </div>
 </template>
   
@@ -277,6 +273,11 @@ export default {
     this.fetchAvailableIngredients();
   },
   methods: {
+    errorHandler(error, message) {
+      if (process.env.VUE_APP_NODE_ENV !== 'production') {
+        console.error(message, error);
+      }
+    },
     triggerConfetti() {
       const canvas = document.getElementById('confetti-canvas');
       const myConfetti = confetti.create(canvas, { resize: true });
@@ -349,8 +350,8 @@ export default {
         );
         alert('Recette créée avec succès.');
       } catch (error) {
-        console.error('Erreur lors de l\'enregistrement de la recette :', error);
-        alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
+        this.errorHandler(error, 'Erreur lors de l\'enregistrement de la recette');
+        alert('Une erreur est survenue lors de l\'enregistrement de la recette. Veuillez recommencer');
       }
     },
     async getUserRestrictions() {
@@ -360,7 +361,7 @@ export default {
       });
       return response.data.restrictions || [];
       } catch (error) {
-        console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
+        this.errorHandler(error, 'Erreur lors de la récupération des restrictions alimentaires :');
         return [];
       }
     },
@@ -380,10 +381,10 @@ export default {
             };
           });
         } else {
-          console.error('Les données reçues ne sont pas valides :', response.data);
+          this.errorHandler(null, 'Les données reçues ne sont pas valides');
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération des ingrédients en stock :', error);
+        this.errorHandler(error, 'Erreur lors de la récupération des ingrédients en stock');
       }
     },
     toggleStockOption() {
@@ -413,11 +414,11 @@ export default {
           this.executeRecipeLogic();
         }
       } catch (error) {
+        this.errorHandler(error, 'Erreur lors de la génération de la recette');
         if (error.response && error.response.status === 401) {
           alert('Votre session a expiré. Veuillez vous reconnecter.');
           this.$router.push('/login');
         } else {
-          console.error('Erreur lors de la génération de la recette :', error);
           alert('Une erreur est survenue. Veuillez réessayer plus tard.');
         }
       }
@@ -468,7 +469,7 @@ export default {
           throw new Error('Les données de la recette sont manquantes ou mal formatées.');
         }
       } catch (error) {
-        console.error('Erreur lors de la recherche de la recette :', error);
+        this.errorHandler(error, 'Erreur lors de la recherche de la recette :');
         alert('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
       } finally {
         this.isLoading = false;
@@ -502,7 +503,7 @@ export default {
         );
         this.isSaved = true;
       } catch (error) {
-        console.error('Erreur lors de l\'enregistrement de la recette :', error);
+        this.errorHandler(error, 'Erreur lors de l\'enregistrement de la recette');
         alert('Une erreur est survenue lors de l\'enregistrement de la recette.');
       } finally {
         this.isSaving = false;
@@ -702,8 +703,8 @@ export default {
   background: #212121;
   padding: 20px;
   border-radius: 10px;
-  width: 90%;
-  max-width: 700px;
+  width: 100%;
+  max-width: 800px;
   text-align: left;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 1000;

@@ -11,7 +11,22 @@ import './assets/styles.scss';
 
 axios.defaults.withCredentials = true;
 
-createApp(App)
-  .use(router)
-  .use(store)
-  .mount('#app')
+const app = createApp(App);
+
+app.config.errorHandler = (err, instance, info) => {
+  if (process.env.VUE_APP_NODE_ENV !== 'production') {
+    console.error(`[Vue Error]: ${info}`, err);
+  }
+};
+window.addEventListener('error', (event) => {
+  if (process.env.VUE_APP_NODE_ENV !== 'production') {
+    console.error('Global error:', event.error);
+  }
+});
+window.addEventListener('unhandledrejection', (event) => {
+  if (process.env.VUE_APP_NODE_ENV !== 'production') {
+    console.error('Unhandled promise rejection:', event.reason);
+  }
+});
+
+app.use(router).use(store).mount('#app');

@@ -12,7 +12,7 @@ exports.getAllRecipes = async (req, res) => {
   try {
     const recipes = await getAllRecipes(userId);
     if (recipes.length === 0) {
-      return res.status(404).json({ message: 'Aucune recette trouvée.' });
+      return res.status(200).json({ message: 'Aucune recette trouvée.' });
     }
     res.status(200).json(recipes);
   } catch (error) {
@@ -26,7 +26,7 @@ exports.getRecipesByUserId = async (req, res, next) => {
   try {
     const recipes = await getRecipesByUserId(userId);
     if (recipes.length === 0) {
-      return res.status(404).json({ message: 'Aucune recette trouvée.' });
+      return res.status(200).json({ message: 'Aucune recette trouvée.' });
     }
     res.status(200).json(recipes);
   } catch (error) {

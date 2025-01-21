@@ -2,7 +2,7 @@ const { defineConfig } = require('@vue/cli-service');
 module.exports = defineConfig({
   transpileDependencies: true,
   pwa: {
-    name: 'Ma Web-App',
+    name: 'CookAller',
     themeColor: '#3f51b5',
     msTileColor: '#000000',
     manifestOptions: {

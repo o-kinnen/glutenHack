@@ -59,8 +59,8 @@
             class="form-check-input" 
             v-model="termsAccepted"
           />
-          <label for="terms" class="form-check-label">J'accepte les conditions d'utilisation</label><br>
-          <router-link to="/terms" class="router-link">Lire les termes de confidentialité</router-link>
+          <label for="terms" class="form-check-label">J'accepte les <router-link to="/terms" class="router-link">conditions d'utilisation</router-link></label><br>
+          <router-link to="/privacy-policy" class="router-link">Lire les termes de confidentialité</router-link>
         </div>
         <button type="submit" class="btn btn-primary w-100">Créer un compte</button>
         <p class="text-center mt-3">Déjà un compte ? <router-link class="router-link" to="/login">Se connecter</router-link></p>
@@ -160,7 +160,7 @@ export default {
       } else {
         this.errorMessage = 'Erreur lors de la communication avec le serveur. Veuillez réessayer plus tard.';
       }
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.VUE_APP_NODE_ENV !== 'production') {
         console.error('[Erreur API]', error);
       }
     },

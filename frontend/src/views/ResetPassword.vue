@@ -129,7 +129,7 @@ export default {
             } else {
                 this.message = userMessage;
             }
-            if (process.env.NODE_ENV !== 'production') {
+            if (process.env.VUE_APP_NODE_ENV !== 'production') {
                 console.error('API Error:', error);
             }
         },

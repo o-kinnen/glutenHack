@@ -25,16 +25,24 @@
               ⚠️ <strong>{{ resultat.nomAliment }}</strong> {{ resultat.message }}
             </p>
             <p v-else-if="!resultat.peutManger">
-              ⚠️ <strong>{{ resultat.nomAliment }}</strong> contient des allergènes problématiques pour vous : <strong>{{ resultat.allergenesProbleme.join(', ') }}</strong>
+              ⚠️ <strong>{{ resultat.nomAliment }}</strong> contient : <strong>{{ resultat.allergenesProbleme.join(', ') }}</strong>
             </p>
             <p v-else>
-              ✅ <strong>{{ resultat.nomAliment }}</strong> semble sûr pour vous. Aucun allergène de votre profil n'est mentionné.
+              ✅ <strong>{{ resultat.nomAliment }}</strong> semble sûr pour vous.
             </p>
             <div v-if="resultat.imageUrl" class="d-flex justify-content-center">
               <img :src="`${resultat.imageUrl}`" alt="Photo de l'aliment" style="max-width: 200px; border: 1px solid #ccc;" />
             </div>
             <div v-else class="d-flex justify-content-center">
               <p>Image non disponible.</p>
+            </div>
+            <div v-if="resultat.allergenes && resultat.allergenes.length > 0" class="resultat">
+              <p v-if="resultat.allergenes && resultat.allergenes.length > 0">
+                Liste complète des allergènes : {{ resultat.allergenes.join(', ') }}
+              </p>
+              <p v-else>
+                Aucun allergène spécifié pour cet aliment.
+              </p>
             </div>
             <p class="source">
               <small>Les informations affichées proviennent de la base de données <a :href="'https://world.openfoodfacts.org/product/' + codeBarre" target="_blank" class="text-white">OpenFoodFacts</a>.</small>
@@ -61,6 +69,12 @@ export default {
     };
   },
   methods: {
+    handleError(error, message) {
+      if (process.env.VUE_APP_NODE_ENV !== 'production') {
+        console.error(message, error);
+      }
+      alert(message);
+    },
     async getUserRestrictions() {
       try {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
@@ -68,8 +82,7 @@ export default {
         });
         return (response.data.restrictions || []).map(restriction => restriction.toLowerCase());
       } catch (error) {
-        console.error('Erreur lors de la récupération des restrictions alimentaires :', error);
-        alert('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
+        this.handleError(error, 'Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
         return [];
       }
     },
@@ -104,7 +117,7 @@ export default {
         };
         this.showModal = true;
       } catch (error) {
-        console.error("Erreur lors de la vérification de l'aliment :", error);
+        this.handleError(error, "Une erreur est survenue lors de la vérification. Veuillez réessayer.");
         alert("Une erreur est survenue lors de la vérification. Veuillez réessayer.");
       }
     },
@@ -126,7 +139,7 @@ export default {
           this.verifierAliment();
         }
       } catch (error) {
-        console.error("Erreur lors de l'activation du scanner :", error);
+        this.handleError(error, "Impossible d'accéder à la caméra. Veuillez vérifier les permissions.");
         alert("Impossible d'accéder à la caméra. Veuillez vérifier les permissions.");
       }
     }

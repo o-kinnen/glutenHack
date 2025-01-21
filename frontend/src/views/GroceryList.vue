@@ -10,11 +10,9 @@
       </div>
       <div v-else>
         <div class="action-buttons">
-          <!--
           <button @click="toggleSort" class="button sort-btn">
             {{ categoriesVisible ? 'Trier' : 'Trier' }}
           </button>
-          -->
           <button @click="exportToFile" class="button export-btn">Exporter</button>
         </div>
       </div>
@@ -25,8 +23,7 @@
             <li v-for="(item, index) in items" :key="index" class="grocery-item">
               <div class="grocery-details">
                 <span class="food-name">{{ item.food_name }}</span>
-                <span v-if="item.quantity" class="food-name">({{ item.quantity }})</span>
-                <span v-else class="food-name">(pas de quantité définie)</span>
+                <span v-if="isValidQuantity(item.quantity)" class="food-name">({{ item.quantity }})</span>
               </div>
               <div class="grocery-actions">
                 <div v-if="isQuantityNumeric(item.quantity)" class="update-section">
@@ -68,8 +65,7 @@
       <li v-for="(item, index) in shoppingItems" :key="index" class="grocery-item">
         <div class="grocery-details">
           <span class="food-name">{{ item.food_name }}</span>
-          <span v-if="item.quantity" class="food-name">({{ item.quantity }})</span>
-          <span v-else class="food-name">(pas de quantité définie)</span>
+          <span v-if="isValidQuantity(item.quantity)" class="food-name">({{ item.quantity }})</span>
         </div>
         <div class="grocery-actions">
           <div v-if="isQuantityNumeric(item.quantity)" class="update-section">
@@ -178,6 +174,14 @@ export default {
         this.groupItemsByCategory();
         this.categoriesVisible = true;
       }
+    },
+    isValidQuantity(quantity) {
+      return (
+        quantity &&
+        typeof quantity === "string" &&
+        !isNaN(parseFloat(quantity)) &&
+        quantity.toUpperCase() !== "N/A"
+      );
     },
     async fetchShoppingList() {
       try {
@@ -291,8 +295,8 @@ export default {
   background-color: #212121;
   border: none;
   border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
+  width: 100%;
+  max-width: 1500px;
   padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-height: 80vh;
@@ -484,5 +488,25 @@ button:hover {
 .icon-action:hover {
   transform: scale(1.2);
   color: #C56929;
+}
+.grocery-list {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 20px;
+}
+@media (min-width: 576px) {
+  .grocery-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .grocery-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 992px) {
+  .grocery-list {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 </style>

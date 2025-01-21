@@ -3,13 +3,6 @@
     <div class="card p-4 text-white">
       <h1>Ingrédients en stock </h1>
       <p>Entrez un ingrédient pour l'ajouter à votre stock.</p>
-      <!--
-      <div class="camera-container d-flex flex-column justify-content-center align-items-center">
-        <video id="scanner" class="camera-feed"></video>
-        <button @click="activerScanner" class="btn btn-secondary mt-2">Scanner</button>
-      </div>
-      <br>
-      -->
       <div class="input-text">
         <input type="text" v-model="newIngredient" placeholder="Ingrédient" :disabled="isLoading" />
       </div>
@@ -37,16 +30,17 @@
         </div>
       </div>
       <button @click="analyzeImage" :disabled="!imageFile || isLoading" class="analyze-button">Analyser</button>
-      <div v-if="isLoading" class="loading-spinner">Chargement...</div>
       <div class="search-container">
         <input v-model="searchIngredient" placeholder="Rechercher" />
-        <!--
-        <button @click="sortIngredientsByCategory" class="sort-button">Trier</button>
-        -->
       </div>
       <br>
       <div v-if="ingredients.length === 0" class="empty-message">
         La liste des ingrédients est vide...
+      </div>
+      <div v-if="isLoading" class="overlay">
+        <div class="spinner-container">
+          <div class="spinner"></div>
+        </div>
       </div>
       <div v-if="showModal" class="modal-overlay">
         <div class="modal-content">
@@ -82,68 +76,33 @@
           </div>
         </div>
       </div>
-      <div v-if="sortByCategory" class="ingredient-list">
-        <div v-for="(categoryGroup, category) in categorizedIngredients" :key="category" class="category-group">
-          <h5 class="category-title">{{ category }}</h5>
-          <ul>
-            <li v-for="(ingredient, index) in categoryGroup" :key="index" class="ingredient-item">
-              <div class="ingredient-info">
-                <strong>{{ ingredient.name }}</strong>
-                <div class="ingredient-quantity">{{ ingredient.quantity }}</div>
-              </div>
-              <div class="ingredient-actions">
-                <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" class="quantity-input" />
-                <div class="modal-actions-icons">
-                  <i class="bi bi-plus-circle-fill icon-action" 
-                    @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" 
-                    title="Ajouter">
-                  </i>
-                  <span class="tooltip-text">Ajouter</span>
-                  <i class="bi bi-dash-circle-fill icon-action" 
-                    @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" 
-                    title="Diminuer">
-                  </i>
-                  <span class="tooltip-text">Diminuer</span>
-                  <i class="bi bi-trash-fill icon-action" 
-                    @click="removeIngredient(index, ingredient.name)" 
-                    title="Supprimer">
-                  </i>
-                  <span class="tooltip-text">Supprimer</span>
-                </div>
-              </div>
-            </li>
-          </ul>
+      <div class="ingredient-list">
+        <div  v-for="(ingredient, index) in filteredIngredients" :key="index" class="ingredient-item">
+          <div class="ingredient-info">
+            <strong>{{ ingredient.name }}</strong>
+            <div class="ingredient-quantity"><strong>({{ ingredient.quantity }})</strong></div>
+          </div>
+          <div class="ingredient-actions">
+            <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" class="quantity-input"/>
+            <div class="modal-actions-icons">
+              <i class="bi bi-plus-circle-fill icon-action" 
+                @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" 
+                title="Ajouter">
+              </i>
+              <span class="tooltip-text">Ajouter</span>
+              <i class="bi bi-dash-circle-fill icon-action" 
+                @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" 
+                title="Diminuer">
+              </i>
+              <span class="tooltip-text">Diminuer</span>
+              <i class="bi bi-trash-fill icon-action" 
+                @click="removeIngredient(index, ingredient.name)" 
+                title="Supprimer">
+              </i>
+              <span class="tooltip-text">Supprimer</span>
+            </div>
+          </div>
         </div>
-      </div>
-      <div v-else class="ingredient-list">
-        <ul>
-          <li v-for="(ingredient, index) in filteredIngredients" :key="index" class="ingredient-item">
-            <div class="ingredient-info">
-              <strong>{{ ingredient.name }}</strong>
-              <div class="ingredient-quantity"><strong>({{ ingredient.quantity }})</strong></div>
-            </div>
-            <div class="ingredient-actions">
-              <input v-model.number="ingredient.updateQuantity" type="number" min="1" placeholder="Quantité" class="quantity-input"/>
-              <div class="modal-actions-icons">
-                <i class="bi bi-plus-circle-fill icon-action" 
-                  @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'add')" 
-                  title="Ajouter">
-                </i>
-                <span class="tooltip-text">Ajouter</span>
-                <i class="bi bi-dash-circle-fill icon-action" 
-                  @click="updateIngredientQuantity(index, ingredient.name, ingredient.updateQuantity, 'subtract')" 
-                  title="Diminuer">
-                </i>
-                <span class="tooltip-text">Diminuer</span>
-                <i class="bi bi-trash-fill icon-action" 
-                  @click="removeIngredient(index, ingredient.name)" 
-                  title="Supprimer">
-                </i>
-                <span class="tooltip-text">Supprimer</span>
-              </div>
-            </div>
-          </li>
-        </ul>
       </div>
     </div>
   </div>
@@ -151,7 +110,6 @@
 
 <script>
 import axios from 'axios';
-import { BrowserMultiFormatReader } from "@zxing/browser";
 export default {
   name: "IngredientsPage.vue",
   data() {
@@ -165,11 +123,8 @@ export default {
       imageUrl: "",
       analysisResult: [],
       isLoading: false,
-      sortByCategory: false,
       errorMessage: "",
       showModal: false,
-      scanner: null,
-      scannerActive: false,
     };
   },
   computed: {
@@ -182,46 +137,22 @@ export default {
       }
       return filtered;
     },
-    categorizedIngredients() {
-      const categorized = {};
-      this.filteredIngredients.forEach(ingredient => {
-        if (!categorized[ingredient.category]) {
-          categorized[ingredient.category] = [];
-        }
-        categorized[ingredient.category].push(ingredient);
-      });
-      return categorized;
-    }
   },
   created() {
     this.fetchIngredientsFromFridge();
   },
   methods: {
+    handleError(error, message) {
+      if (process.env.VUE_APP_NODE_ENV !== 'production') {
+        console.error(message, error);
+      }
+      this.errorMessage = message;
+    },
     onFileChange(event) {
       const file = event.target.files[0];
       if (file) {
         this.imageFile = file;
         this.imageUrl = URL.createObjectURL(file);
-      }
-    },
-    async activerScanner() {
-      try {
-        this.scanner = new BrowserMultiFormatReader();
-        const constraints = {
-          video: {
-            facingMode: { exact: "environment" }
-          }
-        };
-        const videoElement = document.getElementById("scanner");
-        const result = await this.scanner.decodeOnceFromVideoDevice(null, videoElement, constraints);
-        if (result) {
-          this.newIngredient = result.text;
-          console.log(this.newIngredient)
-          this.addIngredient();
-        }
-      } catch (error) {
-        console.error("Erreur lors de l'activation du scanner :", error);
-        alert("Impossible d'accéder à la caméra. Veuillez vérifier les permissions.");
       }
     },
     async analyzeImage() {
@@ -248,7 +179,7 @@ export default {
         }
         this.showModal = true;
       } catch (error) {
-        console.error("Erreur lors de l'analyse de l'image :", error);
+        this.handleError(error, "Erreur lors de l'analyse de l'image");
         alert("Une erreur est survenue lors de l'analyse de l'image.");
       } finally {
         this.isLoading = false;
@@ -286,7 +217,7 @@ export default {
                 withCredentials: true
               });
             } catch (error) {
-              console.error(`Erreur lors de la mise à jour de ${item.name} dans la base de données :`, error);
+              this.handleError(error, `Erreur lors de la mise à jour de ${item.name} dans la base de données`);
             }
           }
         } else {
@@ -304,7 +235,7 @@ export default {
               withCredentials: true
             });
           } catch (error) {
-            console.error(`Erreur lors de l'ajout de ${item.name} dans la base de données :`, error);
+            this.handleError(error, `Erreur lors de l'ajout de ${item.name} dans la base de données`);
           }
         }
       }
@@ -324,7 +255,7 @@ export default {
           updateQuantity: 0
         }));
       } catch (error) {
-        console.error('Erreur lors de la récupération des ingrédients :', error);
+        this.handleError(error, 'Erreur lors de la récupération des ingrédients');
       } finally {
         this.isLoading = false;
       }
@@ -365,7 +296,7 @@ export default {
             }
             this.ingredients[existingIngredientIndex].quantity = `${updatedQuantity} ${currentUnit}`.trim();
           } catch (error) {
-            console.error("Erreur lors de la mise à jour de l'aliment :", error);
+            this.handleError(error, "Erreur lors de la mise à jour de l'aliment");
             return;
           }
         } else {
@@ -384,7 +315,7 @@ export default {
             if (error.response && error.response.status === 404) {
               alert("L'aliment n'est pas encore dans la base de données.");
             } else {
-              console.error("Erreur lors de l'ajout de l'aliment :", error);
+              this.handleError(error, "Erreur lors de l'ajout de l'aliment");
             }
           }
         }
@@ -418,19 +349,16 @@ export default {
         }
       }
       try {
-        const response = await axios.put(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/update`, {
+        await axios.put(`${process.env.VUE_APP_URL_BACKEND}/users/fridge/update`, {
           foodName: ingredientName,
           quantity: updatedQuantity,
           unit: currentUnit
         }, {
           withCredentials: true
         });
-        if (response.status !== 200) {
-          throw new Error("Erreur lors de la mise à jour de l'aliment dans le réfrigérateur de l'utilisateur.");
-        }
         this.ingredients[index].quantity = `${updatedQuantity} ${currentUnit}`.trim();
       } catch (error) {
-        console.error("Erreur lors de la mise à jour de l'aliment :", error);
+        this.handleError(error, "Erreur lors de la mise à jour de l'aliment");
       }
     },
     async removeIngredient(index, ingredientName) {
@@ -445,11 +373,8 @@ export default {
         this.ingredients.splice(index, 1);
         this.$emit("ingredients-updated", this.ingredients);
       } catch (error) {
-        console.error("Erreur lors de la suppression de l'aliment :", error);
+        this.handleError(error, "Erreur lors de la suppression de l'aliment");
       }
-    },
-    sortIngredientsByCategory() {
-      this.sortByCategory = !this.sortByCategory;
     },
     closeModal() {
       this.showModal = false;
@@ -463,8 +388,8 @@ export default {
   background-color: #212121;
   border: none;
   border-radius: 8px;
-  width: 90%;
-  max-width: 600px;
+  width: 100%;
+  max-width: 1500px;
   padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-height: 80vh;
@@ -647,12 +572,11 @@ export default {
   margin-bottom: 10px;
 }
 .ingredient-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 20px auto;
+  display: grid;
+  grid-template-columns: repeat(1, 1fr); /* Par défaut : 1 colonne */
+  gap: 20px; /* Espacement entre les éléments */
   width: 100%;
+  margin: 0 auto;
 }
 .ingredient-item {
   display: flex;
@@ -660,8 +584,6 @@ export default {
   flex-wrap: wrap;
   align-items: flex-start;
   padding: 15px;
-  width : 300px;
-  max-width: 500px;
   margin-bottom: 10px;
   background-color: #171717;
   border: 1px solid #ddd;
@@ -686,7 +608,7 @@ export default {
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
 }
 .ingredient-info {
-  flex-grow: 1;
+  margin-bottom: 10px;
 }
 .ingredient-quantity {
   font-size: 0.9em;
@@ -694,7 +616,8 @@ export default {
 }
 .ingredient-actions {
   display: flex;
-  gap: 5px;
+  justify-content: space-between;
+  align-items: center;
 }
 .sort-button {
   background-color: #BA9371;
@@ -881,5 +804,58 @@ input[type="checkbox"]:checked::after {
   text-align: center;
   background-color: white;
   color: black;
+}
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.spinner-container {
+  text-align: center;
+}
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+.spinner-container p {
+  color: #fff;
+  margin-top: 15px;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (min-width: 576px) {
+  .ingredient-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .ingredient-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 992px) {
+  .ingredient-list {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 </style>

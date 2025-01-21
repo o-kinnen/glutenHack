@@ -14,13 +14,6 @@
           <input type="file" id="recipe-photo" @change="handleFileUpload" name="image" accept=".png, .jpg, .jpeg" />
           <div class="image-preview">
             <img :src="previewImage || localRecipe.image_url || defaultImage" alt="Aperçu de l'image" />
-            <!--
-            <i v-if="previewImage || localRecipe.image_url !== defaultImage" 
-              class="bi bi-trash-fill icon-action remove-photo" 
-              @click="removePhoto" 
-              title="Supprimer">
-            </i>
-            -->
           </div>
           <span v-if="errors.image" class="error-text">{{ errors.image }}</span>
         </div>
@@ -279,7 +272,14 @@ export default {
     },
   },
   methods: {
+    handleError(error, message) {
+      if (process.env.VUE_APP_NODE_ENV === "production") {
+        console.error(message, error);
+      }
+      alert(message);
+    },
     validateForm() {
+      try {
       this.errors = {};
       if (!this.localRecipe.recipe_name) this.errors.recipe_name = "Le titre est obligatoire.";
       if (!this.localRecipe.preparation_time)
@@ -308,8 +308,12 @@ export default {
       if (Object.keys(this.errors).length === 0) {
         this.handleSubmit();
       }
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de la validation du formulaire.");
+      }
     },
     handleSubmit() {
+      try {
       const updatedData = {
         ...this.localRecipe,
       };
@@ -319,11 +323,15 @@ export default {
         this.$emit("update-recipe", updatedData);
       }
       this.closeModal();
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de l'envoi du formulaire.");
+      }
     },
     closeModal() {
       this.$emit("close");
     },
     handleFileUpload(event) {
+      try {
       const file = event.target.files[0];
       if (file) {
         const fileType = file.type;
@@ -334,30 +342,43 @@ export default {
           this.errors.image = "Seuls les fichiers PNG et JPG sont acceptés.";
         }
       }
-    },
-    removePhoto() {
-      this.localRecipe.image = null;
-      this.localRecipe.image_url = null;
-      this.previewImage = null;
-      this.localRecipe.removeImage = true;
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de l'ajout de l'image.");
+      }
     },
     addIngredient() {
+      try {
       if (!Array.isArray(this.localRecipe.ingredients)) {
         this.localRecipe.ingredients = [];
       }
       this.localRecipe.ingredients.push({ food_name: "", quantity: "" });
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de l'ajout d'un ingrédient.");
+      }
     },
     removeIngredient(index) {
+      try {
       this.localRecipe.ingredients.splice(index, 1);
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de la suppression d'un ingrédient.");
+      }
     },
     addInstruction() {
+      try {
       if (!Array.isArray(this.localRecipe.instructions)) {
         this.localRecipe.instructions = [];
       }
       this.localRecipe.instructions.push({ step: "" });
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de l'ajout d'une instruction.");
+      }
     },
     removeInstruction(index) {
+      try {
       this.localRecipe.instructions.splice(index, 1);
+    } catch (error) {
+        this.handleError(error, "Une erreur s'est produite lors de la suppression d'une instruction.");
+      }
     },
   },
 };

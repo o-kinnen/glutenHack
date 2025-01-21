@@ -1,4 +1,6 @@
 <template>
+  <div class="container">
+    <div class="card p-4 text-white">
   <div class="terms-of-service">
     <h1>Conditions d'utilisation</h1>
     <p>Bienvenue sur notre site. En utilisant notre application, vous acceptez les présentes conditions d'utilisation. Veuillez les lire attentivement.</p>
@@ -29,6 +31,8 @@
 
     <p>Merci d'utiliser notre application !</p>
   </div>
+</div>
+</div>
 </template>
 
 <script>
@@ -52,5 +56,22 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+.container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.card {
+  background-color: #212121;
+  border: none;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
 }
 </style>

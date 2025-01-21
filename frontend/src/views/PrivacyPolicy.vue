@@ -1,4 +1,6 @@
 <template>
+    <div class="container">
+        <div class="card p-4 text-white">
     <div class="privacy-policy">
       <h1>Politique de confidentialité</h1>
       <p>Votre vie privée est importante pour nous. Cette politique de confidentialité décrit comment nous collectons, utilisons, et protégeons vos informations personnelles lorsque vous utilisez notre application.</p>
@@ -58,6 +60,8 @@
   
       <p>Dernière mise à jour : [20 janvier 2025].</p>
     </div>
+</div>
+</div>
   </template>
   
   <script>
@@ -85,5 +89,22 @@
   ul {
     padding-left: 20px;
   }
+  .container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.card {
+  background-color: #212121;
+  border: none;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
   </style>
   

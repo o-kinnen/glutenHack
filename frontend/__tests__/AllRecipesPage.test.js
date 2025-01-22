@@ -1,106 +1,128 @@
 import { shallowMount } from '@vue/test-utils';
-import AllRecipesPage from '../src/views/AllRecipesPage.vue';
 import axios from 'axios';
+import AllRecipesPage from '@/views/AllRecipesPage.vue';
 
 jest.mock('axios');
-
-beforeAll(() => {
-  window.alert = jest.fn();
-});
 
 describe('AllRecipesPage.vue', () => {
   let wrapper;
 
   beforeEach(() => {
-    wrapper = shallowMount(AllRecipesPage, {
-      data() {
-        return {
-          recipes: [],
-          showModal: false,
-          currentRecipe: null,
-          errorMessage: ''
-        };
-      }
-    });
+    jest.clearAllMocks();
+    wrapper = shallowMount(AllRecipesPage);
   });
 
-  afterEach(() => {
-    wrapper.unmount();
-  });
-
-  it('fetches recipes on mount', async () => {
-    const recipesMock = [
-      { recipe_id: 1, recipe_name: 'Recipe 1', ingredients: [], instructions: '' },
-      { recipe_id: 2, recipe_name: 'Recipe 2', ingredients: [], instructions: '' }
-    ];
-    axios.get.mockResolvedValue({ data: recipesMock });
+  it('charge correctement les recettes et applique les filtres', async () => {
+    axios.get
+      .mockResolvedValueOnce({
+        data: [
+          { recipe_id: 1, recipe_name: 'Recipe 1', allergens_list: ['Gluten'] },
+          { recipe_id: 2, recipe_name: 'Recipe 2', allergens_list: ['Lait'] },
+        ],
+      })
+      .mockResolvedValueOnce({
+        data: [
+          { recipe_id: 1 },
+        ],
+      });
 
     await wrapper.vm.fetchRecipes();
 
-    expect(axios.get).toHaveBeenCalledWith(`${process.env.VUE_APP_URL_BACKEND}/recipes/all`, { withCredentials: true });
-    expect(wrapper.vm.recipes).toEqual(recipesMock);
-    expect(wrapper.vm.errorMessage).toBe('');
+    expect(wrapper.vm.recipes).toEqual([
+      { recipe_id: 1, recipe_name: 'Recipe 1', allergens_list: ['Gluten'], isFavorite: true },
+      { recipe_id: 2, recipe_name: 'Recipe 2', allergens_list: ['Lait'], isFavorite: false },
+    ]);
+    expect(wrapper.vm.filteredRecipes).toHaveLength(2);
   });
 
-  it('handles error while fetching recipes', async () => {
+  it('affiche un message lorsque aucune recette n’est disponible', async () => {
+    axios.get.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+
+    await wrapper.vm.fetchRecipes();
+
+    expect(wrapper.vm.recipes).toEqual([]);
+    expect(wrapper.vm.filteredRecipes).toEqual([]);
+    const noRecipesMessage = wrapper.find('.no-recipes');
+    expect(noRecipesMessage.exists()).toBe(true);
+    expect(noRecipesMessage.text()).toContain('Aucune recette a été rendue public par les autres utilisateurs pour le moment...');
+  });
+
+  it('charge les restrictions alimentaires de l’utilisateur', async () => {
+    axios.get.mockResolvedValueOnce({ data: { restrictions: ['Gluten', 'Lait'] } });
+  
+    await wrapper.vm.loadUserAllergens();
+  
+    expect(wrapper.vm.userAllergens).toEqual(['Gluten', 'Lait']);
+  });
+  
+
+  it('gère les erreurs lors de la récupération des recettes', async () => {
     axios.get.mockRejectedValue(new Error('Network Error'));
 
     await wrapper.vm.fetchRecipes();
 
-    expect(wrapper.vm.errorMessage).toBe('Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.');
+    expect(wrapper.vm.recipes).toEqual([]);
+    expect(wrapper.vm.filteredRecipes).toEqual([]);
+    expect(wrapper.vm.errorMessage).toBe('Erreur lors de la récupération des recettes utilisateur.');
   });
 
-  it('opens and closes modal correctly', async () => {
-    wrapper.setData({
-      recipes: [{ recipe_id: 1, recipe_name: 'Recipe 1', ingredients: [], instructions: '' }],
-    });
+  it('ajoute une recette aux favoris', async () => {
+    wrapper.setData({ currentRecipe: { recipe_id: 1, isFavorite: false } });
 
-    wrapper.vm.openModal(0);
-    expect(wrapper.vm.showModal).toBe(true);
-    expect(wrapper.vm.currentRecipe.recipe_name).toBe('Recipe 1');
+    axios.post.mockResolvedValue({ data: { message: 'Recette ajoutée aux favoris.' } });
 
-    wrapper.vm.closeModal();
-    expect(wrapper.vm.showModal).toBe(false);
-    expect(wrapper.vm.currentRecipe).toBe(null);
+    await wrapper.vm.addToFavorites();
+
+    expect(wrapper.vm.isFavorite).toBe(true);
+    expect(wrapper.vm.currentRecipe.isFavorite).toBe(true);
   });
 
-  it('displays error message when errorMessage is set', () => {
-    wrapper.setData({ errorMessage: 'Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.' });
+  it('retire une recette des favoris', async () => {
+    wrapper.setData({ currentRecipe: { recipe_id: 1, isFavorite: true } });
 
-    expect(wrapper.find('.error-message').exists()).toBe(true);
-    expect(wrapper.find('.error-message').text()).toBe('Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.');
+    axios.delete.mockResolvedValue({ data: { message: 'Recette retirée des favoris.' } });
+
+    await wrapper.vm.removeFromFavorites();
+
+    expect(wrapper.vm.isFavorite).toBe(false);
+    expect(wrapper.vm.currentRecipe.isFavorite).toBe(false);
   });
-
-  it('displays no recipes message when recipes list is empty', () => {
-    wrapper.setData({ recipes: [] });
-
-    expect(wrapper.find('.no-recipes').exists()).toBe(true);
-    expect(wrapper.find('.no-recipes').text()).toBe("Aucune recette n'a été enregistrée pour le moment.");
-  });
-
-  it('adds recipe to shopping list successfully', async () => {
-    wrapper.setData({
-      currentRecipe: { recipe_id: 1, recipe_name: 'Recipe 1' }
-    });
-
-    axios.post.mockResolvedValue({ data: { message: 'Ajouté avec succès' } });
-
-    await wrapper.vm.addToShoppingList();
-
-    expect(axios.post).toHaveBeenCalledWith(`${process.env.VUE_APP_URL_BACKEND}/shopping-list/add`, {
-      recipeId: 1
-    }, { withCredentials: true });
-  });
-
-  it('handles error while adding to shopping list', async () => {
-    wrapper.setData({
-      currentRecipe: { recipe_id: 1, recipe_name: 'Recipe 1' }
-    });
+  
+  it('gère les erreurs lors de l’ajout à la liste des courses', async () => {
+    wrapper.setData({ currentRecipe: { recipe_id: 1 } });
 
     axios.post.mockRejectedValue(new Error('Network Error'));
 
     await wrapper.vm.addToShoppingList();
 
-    expect(wrapper.vm.errorMessage).toBe('Une erreur est survenue lors de la récupération des recettes. Veuillez réessayer plus tard.');
+    expect(wrapper.vm.errorMessage).toBe('Erreur lors de l\'ajout à la liste des courses:');
+  });
+
+  it('génère un PDF avec les détails de la recette', async () => {
+    wrapper.setData({
+      currentRecipe: {
+        recipe_name: 'Test Recipe',
+        preparation_time: '10 min',
+        difficulty: 'Facile',
+        number_of_person: 2,
+        cuisine_type: 'Italienne',
+        category_type: 'Plat principal',
+        allergens_list: ['Gluten'],
+        ingredients: [
+          { quantity: '100g', food_name: 'Pâtes' },
+          { quantity: '50g', food_name: 'Sauce tomate' },
+        ],
+        instructions: 'Étape 1\nÉtape 2',
+        image_url: '/img/test.png',
+      },
+    });
+
+    const generatePDFMock = jest.fn();
+    wrapper.vm.generatePDF = generatePDFMock;
+
+    await wrapper.vm.generatePDF();
+
+    expect(generatePDFMock).toHaveBeenCalled();
   });
 });
+

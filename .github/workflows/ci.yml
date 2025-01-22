@@ -26,7 +26,8 @@ jobs:
       # 3. Install frontend dependencies
       - name: Install dependencies
         working-directory: frontend
-        run: npm install
+        run: npm install --legacy-peer-deps
+
 
       # 4. Run frontend unit tests
       - name: Run unit tests

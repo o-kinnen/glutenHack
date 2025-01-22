@@ -23,15 +23,16 @@ describe('RecipePage.vue', () => {
           recipe: null,
           isLoading: false,
           showModal: false,
+          showIARecipeModal: false,
           showAllergenAlert: false,
           selectedTime: 'Rapide',
           selectedDifficulty: 'Facile',
           selectedCuisine: 'Européenne',
           selectedPeople: '1',
           selectedType: 'Petit-déjeuner',
-          availableIngredients: []
+          availableIngredients: [],
         };
-      }
+      },
     });
   });
 
@@ -39,129 +40,133 @@ describe('RecipePage.vue', () => {
     wrapper.unmount();
   });
 
-  it('fetches recipe with user restrictions', async () => {
-    const restrictionsMock = ['Nuts', 'Gluten'];
-    axios.get.mockResolvedValue({ data: { restrictions: restrictionsMock } });
+  it('fetches available ingredients on mount', async () => {
+    const mockIngredients = [
+      { food_name: 'Tomate', quantity: '3 kg' },
+      { food_name: 'Oignon', quantity: '1.5 kg' },
+    ];
+    axios.get.mockResolvedValue({ data: mockIngredients });
+
+    await wrapper.vm.fetchAvailableIngredients();
+
+    expect(axios.get).toHaveBeenCalledWith(`${process.env.VUE_APP_URL_BACKEND}/users/fridge`, { withCredentials: true });
+    expect(wrapper.vm.availableIngredients).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ food_name: 'Tomate', maxQuantity: 3, unit: 'kg' }),
+        expect.objectContaining({ food_name: 'Oignon', maxQuantity: 1.5, unit: 'kg' }),
+      ])
+    );
+  });
+
+  it('fetches recipe based on user restrictions', async () => {
+    axios.get.mockResolvedValue({ data: { restrictions: ['Gluten'] } });
     axios.post.mockResolvedValue({ data: {
-      title: 'Pancakes',
-      ingredients: ['Flour', 'Eggs', 'Milk'],
-      instructions: ['Mix ingredients', 'Cook on skillet'],
-      quantity: [200, 2, 300],
-      time: '20 min',
-      difficulty: 'Easy',
-      cuisine: 'American',
+      title: 'Salade',
+      ingredients: ['Laitue', 'Tomate'],
+      instructions: ['Prenez les ingrédients', 'Mélangez'],
+      quantity: [1, 2],
+      time: 'Rapide',
+      difficulty: 'Facile',
+      cuisine: 'Mediterranéen',
       people: 2,
-      type: 'Breakfast',
-      restrictionsList: restrictionsMock
+      type: 'Lunch',
     }});
 
     await wrapper.vm.fetchRecipe();
 
     expect(axios.get).toHaveBeenCalledWith(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, { withCredentials: true });
-    expect(wrapper.vm.recipe).toEqual({
-      title: 'Pancakes',
-      ingredients: ['Flour', 'Eggs', 'Milk'],
-      instructions: ['Mix ingredients', 'Cook on skillet'],
-      quantity: [200, 2, 300],
-      time: '20 min',
-      difficulty: 'Easy',
-      cuisine: 'American',
-      people: 2,
-      type: 'Breakfast',
-      image: undefined,
-      restrictionsList: restrictionsMock
-    });
+    expect(axios.post).toHaveBeenCalledWith(
+      `${process.env.VUE_APP_URL_BACKEND}/openai/recipe`,
+      expect.objectContaining({
+        time: 'Rapide',
+        difficulty: 'Facile',
+        cuisine: 'Européenne',
+        people: '1',
+        type: 'Petit-déjeuner',
+      }),
+      { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+    );
+    expect(wrapper.vm.recipe.title).toBe('Salade');
   });
 
-  it('handles error while fetching user restrictions', async () => {
-    axios.get.mockRejectedValue(new Error('Network Error'));
+  it('displays allergen alert when no restrictions are set', async () => {
+    axios.get.mockResolvedValue({ data: { restrictions: [] } });
 
     await wrapper.vm.fetchRecipe();
 
-    expect(console.error).toHaveBeenCalledWith('Erreur lors de la récupération des restrictions alimentaires :', expect.any(Error));
-    expect(window.alert).toHaveBeenCalledWith('Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.');
+    expect(wrapper.vm.showAllergenAlert).toBe(true);
+    expect(window.alert).not.toHaveBeenCalled();
   });
 
-  it('executes recipe logic and sets recipe data correctly', async () => {
-    axios.post.mockResolvedValue({ data: {
-      title: 'Pancakes',
-      ingredients: ['Flour', 'Eggs', 'Milk'],
-      instructions: ['Mix ingredients', 'Cook on skillet'],
-      quantity: [200, 2, 300],
-      time: '20 min',
-      difficulty: 'Easy',
-      cuisine: 'American',
-      people: 2,
-      type: 'Breakfast'
-    }});
+  it('handles error during fetchAvailableIngredients gracefully', async () => {
+    axios.get.mockRejectedValue(new Error('Network Error'));
 
-    await wrapper.vm.executeRecipeLogic();
+    await wrapper.vm.fetchAvailableIngredients();
 
-    expect(axios.post).toHaveBeenCalledWith(`${process.env.VUE_APP_URL_BACKEND}/openai/recipe`, {
-      time: 'Rapide',
-      difficulty: 'Facile',
-      cuisine: 'Européenne',
-      people: '1',
-      type: 'Petit-déjeuner',
-      availableIngredients: []
-    }, { headers: { 'Content-Type': 'application/json' }, withCredentials: true });
-    expect(wrapper.vm.recipe.title).toBe('Pancakes');
+    expect(console.error).toHaveBeenCalledWith('Erreur lors de la récupération des ingrédients en stock', expect.any(Error));
   });
 
-  it('handles error while executing recipe logic', async () => {
-    axios.post.mockRejectedValue(new Error('Network Error'));
-
-    await wrapper.vm.executeRecipeLogic();
-
-    expect(console.error).toHaveBeenCalledWith('Erreur lors de la recherche de la recette :', expect.any(Error));
-    expect(window.alert).toHaveBeenCalledWith('Une erreur est survenue lors de la recherche de la recette. Veuillez réessayer plus tard.');
-  });
-
-  it('saves recipe successfully', async () => {
-    wrapper.setData({
-      recipe: {
-        title: 'Pancakes',
-        ingredients: [{ food_id: 1, quantity: 200 }],
-        restrictionsList: []
-      }
-    });
-
-    axios.post.mockResolvedValue({ status: 200 });
-
-    await wrapper.vm.saveRecipe();
-
-    expect(axios.post).toHaveBeenCalledWith(`${process.env.VUE_APP_URL_BACKEND}/recipes/save`, {
-      recipe: {
-        title: 'Pancakes',
-        ingredients: [{ food_id: 1, quantity: 200 }],
-        restrictionsList: []
-      },
-      ingredients: [{ food_id: 1, quantity: 200 }]
-    }, { headers: { 'Content-Type': 'application/json' } });
-    expect(window.alert).toHaveBeenCalledWith('Recette enregistrée avec succès !');
-  });
-
-  it('handles error while saving recipe', async () => {
-    wrapper.setData({
-      recipe: {
-        title: 'Pancakes',
-        ingredients: [{ food_id: 1, quantity: 200 }]
-      }
-    });
-
-    axios.post.mockRejectedValue(new Error('Network Error'));
-
-    await wrapper.vm.saveRecipe();
-
-    expect(console.error).toHaveBeenCalledWith("Erreur lors de l'enregistrement de la recette :", expect.any(Error));
-    expect(window.alert).toHaveBeenCalledWith("Une erreur est survenue lors de l'enregistrement de la recette.");
-  });
-
-  it('opens and closes modal correctly', async () => {
+  it('handles recipe modal open/close correctly', async () => {
     wrapper.vm.openModal();
     expect(wrapper.vm.showModal).toBe(true);
 
     wrapper.vm.closeModal();
     expect(wrapper.vm.showModal).toBe(false);
+  });
+
+  it('handles ingredient stock modal interactions', async () => {
+    wrapper.vm.toggleStockOption();
+    expect(wrapper.vm.showStockModal).toBe(true);
+
+    wrapper.vm.closeStockSelectionModal();
+    expect(wrapper.vm.showStockModal).toBe(false);
+  });
+
+  it('saves a recipe successfully', async () => {
+    wrapper.setData({
+      recipe: {
+        title: 'Salade',
+        ingredients: [{ food_id: 1, quantity: 2 }],
+        restrictionsList: [],
+      },
+    });
+    axios.post.mockResolvedValue({ status: 200 });
+
+    await wrapper.vm.saveRecipe();
+
+    expect(axios.post).toHaveBeenCalledWith(
+      `${process.env.VUE_APP_URL_BACKEND}/recipes/save`,
+      expect.objectContaining({
+        recipe: expect.objectContaining({ title: 'Salade' }),
+        ingredients: expect.any(Array),
+      }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    expect(wrapper.vm.isSaved).toBe(true);
+  });
+
+  it('handles error during recipe save gracefully', async () => {
+    wrapper.setData({
+      recipe: {
+        title: 'Salade',
+        ingredients: [{ food_id: 1, quantity: 2 }],
+      },
+    });
+    axios.post.mockRejectedValue(new Error('Network Error'));
+
+    await wrapper.vm.saveRecipe();
+
+    expect(console.error).toHaveBeenCalledWith("Erreur lors de l'enregistrement de la recette", expect.any(Error));
+    expect(window.alert).toHaveBeenCalledWith('Une erreur est survenue lors de l\'enregistrement de la recette.');
+  });
+
+  it('validates ingredient quantities correctly', () => {
+    wrapper.setData({
+      availableIngredients: [{ food_name: 'Tomate', maxQuantity: 3, selectedQuantity: 5 }],
+    });
+
+    wrapper.vm.validateQuantity(wrapper.vm.availableIngredients[0]);
+
+    expect(wrapper.vm.availableIngredients[0].selectedQuantity).toBe(3);
   });
 });

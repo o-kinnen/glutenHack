@@ -166,18 +166,26 @@
                   :value="ingredient.food_name" 
                   v-model="selectedIngredients" 
                 />
-                  {{ ingredient.food_name }} (Max: {{ ingredient.maxQuantity }} {{ ingredient.unit }})
+                <input
+                  type="number"
+                  v-model.number="ingredient.selectedQuantity"
+                  :placeholder="'Quantité en ' + ingredient.unit"
+                  :max="ingredient.maxQuantity"
+                  :min="1"
+                  :disabled="!selectedIngredients.includes(ingredient.food_name)"
+                  @input="validateQuantity(ingredient)"
+                  style="margin-left: 10px; width: 50px;"
+                />
               </label>
-              <input
-                type="number"
-                v-model.number="ingredient.selectedQuantity"
-                :placeholder="'Quantité en ' + ingredient.unit"
-                :max="ingredient.maxQuantity"
-                :min="1"
-                :disabled="!selectedIngredients.includes(ingredient.food_name)"
-                @input="validateQuantity(ingredient)"
-                style="margin-left: 10px; width: 100px;"
-              />
+              <i class="bi bi-plus-circle-fill icon-action" 
+                @click="ingredient.selectedQuantity = Math.min(ingredient.selectedQuantity + 1, ingredient.maxQuantity)" 
+                title="Ajouter">
+              </i>
+              <i class="bi bi-dash-circle-fill icon-action" 
+                @click="ingredient.selectedQuantity = Math.max(ingredient.selectedQuantity - 1, 1)" 
+                title="Diminuer">
+              </i>
+                {{ ingredient.food_name }} (Max: {{ ingredient.maxQuantity }} {{ ingredient.unit }})
             </li>
           </ul>
           <button @click="confirmSelection" >Confirmer</button>
@@ -999,5 +1007,15 @@ input[type="checkbox"]:checked::after {
   11%, 100% {
     opacity: 0;
   }
+}
+.icon-action {
+  font-size: 24px;
+  color: #BA9371;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.3s ease;
+}
+.icon-action:hover {
+  transform: scale(1.2);
+  color: #C56929;
 }
 </style>

@@ -35,8 +35,11 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     });
   });
 
-  //Test de la récupération des données de profil avec succès
-  it('should fetch profile data successfully', async () => {
+  afterEach(() => {
+    wrapper.unmount();
+  });
+
+  it('fetches profile data successfully', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -53,8 +56,7 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(wrapper.find('p strong').text()).toBe('olivia@example.com');
   });
 
-  //Test d'affichage du message d'erreur en cas d'échec de la récupération des données
-  it('should display error message if profile fetch fails', async () => {
+  it('displays error message if profile fetch fails', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: false,
@@ -69,8 +71,7 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/login');
   });
 
-  //Test de la déconnexion avec succès
-  it('should call logout and redirect to login page', async () => {
+  it('logs out successfully', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -84,8 +85,7 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/login');
   });
 
-  //Test d'affichage d'un message d'erreur si la déconnexion échoue
-  it('should display error message if logout fails', async () => {
+  it('displays error message if logout fails', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: false,
@@ -98,8 +98,7 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(wrapper.vm.errorMessage).toBe('Erreur lors de la déconnexion. Veuillez réessayer.');
   });
 
-  //Test de la suppression de compte avec succès
-  it('should delete account successfully', async () => {
+  it('deletes account successfully', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -111,15 +110,19 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     await wrapper.vm.deleteAccount();
     await flushPromises();
 
-    expect(window.confirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir supprimer votre compte ? Les recettes publiques seront conservées en anonyme et seules les recettes privées seront supprimées.');
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/users/delete'), expect.objectContaining({ method: 'DELETE' }));
+    expect(window.confirm).toHaveBeenCalledWith(
+      'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible'
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/users/delete'),
+      expect.objectContaining({ method: 'DELETE' })
+    );
     expect(window.alert).toHaveBeenCalledWith('Votre compte a été supprimé avec succès.');
     expect(wrapper.vm.$store.dispatch).toHaveBeenCalledWith('logout');
     expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/');
   });
 
-  //Test d'affichage d'un message d'erreur si la suppression de compte échoue
-  it('should display error message if delete account fails', async () => {
+  it('displays error message if delete account fails', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: false,
@@ -133,16 +136,14 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(wrapper.vm.errorMessage).toBe('Erreur lors de la suppression du compte. Veuillez réessayer.');
   });
 
-  //Test de l'ouverture du modal avec le bouton "Modifier mes allergènes"
-  it('should show modal when "Modifier mes allergènes" button is clicked', async () => {
+  it('shows modal when "Modifier mes allergènes" button is clicked', async () => {
     expect(wrapper.vm.showModal).toBe(false);
     await wrapper.find('button.btn.mb-2').trigger('click');
     expect(wrapper.vm.showModal).toBe(true);
     expect(wrapper.find('.modal-content').exists()).toBe(true);
   });
 
-  //Test d'affichage des restrictions dans le modal
-  it('should display restriction options in modal', async () => {
+  it('displays restriction options in modal', async () => {
     wrapper.setData({ showModal: true });
     await flushPromises();
 
@@ -154,8 +155,7 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(restrictionOptions.at(3).text()).toContain('Arachide');
   });
 
-  //Test de la soumission des restrictions sélectionnées
-  it('should submit selected restrictions', async () => {
+  it('submits selected restrictions', async () => {
     wrapper.setData({ showModal: true });
     wrapper.vm.restrictions[0].selected = true;
     wrapper.vm.restrictions[3].selected = true;
@@ -179,3 +179,4 @@ describe('ProfilePage.vue - Tests des fonctionnalités', () => {
     expect(wrapper.vm.showModal).toBe(false);
   });
 });
+

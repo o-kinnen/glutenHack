@@ -462,7 +462,9 @@ export default {
         this.currentRecipe.averageRating = parseFloat(response.data.averageRating) || 0;
       } catch (error) {
         this.handleError(error, 'Erreur lors de la récupération de la moyenne des notes :');
-        this.currentRecipe.averageRating = 0;
+        if (this.currentRecipe) {
+          this.currentRecipe.averageRating = 0;
+        }
         alert('Impossible de récupérer la moyenne des notes.');
       }
     },
@@ -657,11 +659,17 @@ export default {
       }
     },
     async openModal(recipe) {
+      if (!recipe || !recipe.recipe_id) {
+        this.handleError('Aucune recette fournie');
+        return;
+      }
       this.currentRecipe = { ...recipe, rating: recipe.rating || 0 };
       this.showModal = true;
-      if (this.currentRecipe?.recipe_id) {
+      try {
         await this.fetchAverageRating(this.currentRecipe.recipe_id);
         await this.checkIfFavorite(this.currentRecipe.recipe_id);
+      } catch (error) {
+        this.handleError(error, "Erreur lors de l'ouverture du modal.");
       }
     },
     closeModal() {

@@ -220,7 +220,7 @@
               title="Exporter en PDF">
             </i>
             <i class="bi bi-pencil icon-action" 
-              @click="openEditModal" 
+              @click="openEditModal(currentRecipe)" 
               title="Modifier">
             </i>
             <i class="bi bi-trash icon-action" 
@@ -668,11 +668,13 @@ export default {
       this.showModal = false;
       this.currentRecipe = null;
     },
-    openEditModal() {
-    this.showEditModal = true;
+    openEditModal(recipe) {
+      this.currentRecipe = { ...recipe };
+      this.showModal = false;
+      this.showEditModal = true;
     },
     closeEditModal() {
-    this.showEditModal = false;
+      this.showEditModal = false;
     },
     updateRecipe(updatedRecipe) {
       const index = this.recipes.findIndex(recipe => recipe.recipe_id === updatedRecipe.recipe_id);

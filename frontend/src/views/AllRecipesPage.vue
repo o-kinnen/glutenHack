@@ -403,6 +403,10 @@ export default {
       }
     },
     async fetchAverageRating(recipe_id) {
+      if (!this.currentRecipe) {
+        this.handleError("Aucune recette sélectionnée pour récupérer la moyenne des notes.");
+        return;
+      }
       try {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/rate/average/${recipe_id}`, {
         withCredentials: true,
@@ -410,7 +414,9 @@ export default {
         this.currentRecipe.averageRating = parseFloat(response.data.averageRating) || 0;
       } catch (error) {
         this.handleError(error, 'Erreur lors de la récupération de la moyenne des notes :');
-        this.currentRecipe.averageRating = 0;
+        if (this.currentRecipe) {
+          this.currentRecipe.averageRating = 0;
+        }
         alert('Impossible de récupérer la moyenne des notes.');
       }
     },
@@ -422,21 +428,21 @@ export default {
         const favoritesResponse = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/recipes/favorites`, {
           withCredentials: true,
         });
-        const favoriteIds = favoritesResponse.data.map(fav => fav.recipe_id);
-        this.recipes = response.data.map(recipe => ({
+        const favoriteIds = (favoritesResponse?.data || []).map(fav => fav.recipe_id);
+        this.recipes = (response?.data || []).map(recipe => ({
           ...recipe,
           isFavorite: favoriteIds.includes(recipe.recipe_id),
         }));
         this.filterRecipes();
       } catch (error) {
-      if (error.response && error.response.status === 404) {
-        this.recipes = [];
-        this.filterRecipes();
-      } else {
-        this.handleError(error, "Erreur lors de la récupération des recettes utilisateur.");
+        if (error.response && error.response.status === 404) {
+          this.recipes = [];
+          this.filterRecipes();
+        } else {
+          this.handleError(error, "Erreur lors de la récupération des recettes utilisateur.");
+        }
       }
-    }
-  },
+    },
     async addToFavorites() {
       try {
         if (!this.currentRecipe?.recipe_id) {
@@ -506,7 +512,7 @@ export default {
         const response = await axios.get(`${process.env.VUE_APP_URL_BACKEND}/users/restrictions`, {
         withCredentials: true
       });
-      return response.data.restrictions || [];
+      return response?.data?.restrictions || [];
       } catch (error) {
         this.handleError(error, "Impossible de récupérer les restrictions alimentaires. Veuillez réessayer.");
         return [];
@@ -518,6 +524,10 @@ export default {
       return this.userAllergens.filter((allergen) => !recipe.allergens_list.includes(allergen));
     },
     async addToShoppingList() {
+      if (!this.currentRecipe || !this.currentRecipe.recipe_id) {
+        alert("Aucune recette sélectionnée pour ajouter à la liste des courses.");
+        return;
+      }
       try {
         const response = await axios.post(
           `${process.env.VUE_APP_URL_BACKEND}/shopping-list/add`,
@@ -526,10 +536,10 @@ export default {
           },
           { withCredentials: true }
         );
-        alert(response.data.message);
+        alert(response?.data?.message || "Recette ajoutée avec succès.");
       } catch (error) {
         this.handleError(error, 'Erreur lors de l\'ajout à la liste des courses:');
-        alert('Une erreur est survenue.');
+        alert('Une erreur est survenue lors de l\'ajout à la liste des courses.');
       }
     },
     async openModal(recipe) {

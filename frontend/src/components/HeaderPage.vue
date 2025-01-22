@@ -3,10 +3,8 @@
     <nav class="navbar navbar-expand-lg navbar-light background-nav" v-if="isAuthenticated">
       <div class="container-fluid">
         <div class="d-flex align-items-center">
-          <router-link to="/" class="d-flex align-items-center text-decoration-none">
-            <img src="../../public/img/logo.png" style="width:30px;" alt="Logo du site" class="logo me-2" />
-            <h5 class="site-name mb-0">CookAller</h5>
-          </router-link>
+          <img src="../../public/img/logo.png" style="width:30px;" alt="Logo du site" class="logo me-2" />
+          <h5 class="site-name mb-0">CookAller</h5>
         </div>
         <button
           class="navbar-toggler"

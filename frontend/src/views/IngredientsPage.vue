@@ -187,13 +187,13 @@ export default {
     },
     async validateSelection() {
       this.showModal = false;
+      this.errorMessage = '';
       const selectedItems = this.analysisResult.filter(item => item.selected && item.quantity);
       const invalidItems = selectedItems.filter(item => !item.quantity || parseFloat(item.quantity) <= 0);
       if (invalidItems.length > 0) {
         this.errorMessage = "Veuillez indiquer une quantité valide pour tous les ingrédients sélectionnés.";
         return;
       }
-      this.errorMessage = "";
       for (const item of selectedItems) {
         const existingIngredientIndex = this.ingredients.findIndex(
           ingredient => 

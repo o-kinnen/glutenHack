@@ -146,7 +146,7 @@
                   Arachide
               </span>
             </label>
-            <label class="checkbox-item"><input type="checkbox" value="Fruits à coque" v-model="localRecipe.allergens_list" />
+            <label class="checkbox-item"><input type="checkbox" value="Noix" v-model="localRecipe.allergens_list" />
               <span class="text-and-icon">
                 <img src="/img/noix.png" alt="Icone" class="restriction-icon" />
                   Noix
